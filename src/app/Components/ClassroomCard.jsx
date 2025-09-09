@@ -1,29 +1,35 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { FaCopy, FaUsers, FaCalendarAlt, FaIdBadge } from "react-icons/fa";
+import {
+  FaCopy,
+  FaUsers,
+  FaCalendarAlt,
+  FaIdBadge,
+  FaVideo,
+  FaFileAlt,
+  FaBookOpen
+} from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function ClassroomCard({ name, id, students, createdAt }) {
+export default function ClassroomCard({ name, id, students, createdAt, videos, files, tasks }) {
   const router = useRouter();
 
   // نسخ الـ ID
   const handleCopy = () => {
     navigator.clipboard.writeText(id);
-    toast.success(" تم نسخ الكود");
+    toast.success("تم نسخ الكود");
   };
 
   return (
     <>
-      {/* Toast Container */}
       <Toaster position="top-center" reverseOrder={false} />
-
       <div
         onClick={() => router.push(`/Pages/ClassRoom/${id}`)}
         className="relative bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg cursor-pointer 
-                 hover:shadow-xl hover:scale-[1.01] transition-all border border-[#2a2a2a]"
+                 hover:shadow-xl hover:scale-[1.01] transition-all ease-in-out duration-200 border border-[#2a2a2a] space-y-3"
       >
-        {/* زر نسخ في الأعلى يسار */}
+        {/* زر نسخ */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -39,21 +45,37 @@ export default function ClassroomCard({ name, id, students, createdAt }) {
         {/* اسم الكلاس */}
         <h3 className="text-xl font-bold text-[#1998e1] mb-4">{name}</h3>
 
-        {/* ID */}
-        <div className="flex items-center justify-start mb-4 text-gray-300 text-sm gap-2">
-          <FaIdBadge className="text-[#1998e1]" />
-          {id}
+        <div className="grid grid-cols-2 gap-3 mt-5">
+
+          {/* ID */}
+          <div className="flex items-center gap-2 text-gray-300 text-sm">
+            <FaIdBadge className="text-[#1998e1]" />
+            {id}
+          </div>
+
+          {/* عدد الطلاب */}
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <FaUsers className="text-[#1998e1]" /> {students} طالب
+          </div>
+
+          {/* إحصائيات إضافية */}
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <FaVideo className="text-[#1998e1]" /> {videos}
+          </div>
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <FaFileAlt className="text-[#1998e1]" /> {files}
+          </div>
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <FaBookOpen className="text-[#1998e1]" /> {tasks}
+          </div>
+
+          {/* تاريخ الإنشاء */}
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <FaCalendarAlt className="text-[#1998e1]" /> {createdAt}
+          </div>
+        
         </div>
 
-        {/* عدد الطلاب */}
-        <div className="flex items-center gap-2 text-gray-400 text-sm mb-2">
-          <FaUsers className="text-[#1998e1]" /> {students} طالب
-        </div>
-
-        {/* تاريخ الإنشاء */}
-        <div className="flex items-center gap-2 text-gray-400 text-sm">
-          <FaCalendarAlt className="text-[#1998e1]" /> {createdAt}
-        </div>
       </div>
     </>
   );

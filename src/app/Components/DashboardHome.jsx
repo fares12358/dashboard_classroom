@@ -58,13 +58,10 @@ const DashboardHome = ({ classrooms }) => {
       {/* قائمة الكلاسات */}
       <h2 className="text-xl font-semibold mb-4">الفصول الدراسية</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {classrooms.concat(classrooms).map((classroom, index) => (
+        {classrooms.map((classroom, index) => (
           <ClassroomCard
-            key={classroom.id + index}
-            name={classroom.name}
-            id={classroom.id}
-            students={classroom.students}
-            createdAt={classroom.createdAt}
+            key={index}
+            {...classroom} // تمرير جميع البيانات مرة واحدة
           />
         ))}
       </div>

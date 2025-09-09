@@ -11,7 +11,8 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null); // for logged-in user
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [classrooms, setClassrooms] = useState([]); // store classroom data
-  
+  const [activePage, setActivePage] = useState("home");
+
   return (
     <AppContext.Provider
       value={{
@@ -22,6 +23,7 @@ export const AppProvider = ({ children }) => {
         isLogin, setIsLogin,
         classrooms,
         setClassrooms,
+        activePage, setActivePage
       }}
     >
       {children}

@@ -1,15 +1,12 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   FaHome,
   FaUser,
-  FaCog,
   FaSignOutAlt,
   FaChartBar,
   FaBars,
   FaTimes,
-  FaUsers,
-  FaDollarSign,
   FaChalkboardTeacher,
   FaUserGraduate,
   FaClipboardList,
@@ -23,17 +20,39 @@ import Students from "./Components/Students";
 import { useAppContext } from "./Context/AppContext";
 import { useRouter } from "next/navigation";
 
-
 export default function Home() {
-  const { sidebarOpen, setSidebarOpen, isLogin, setIsLogin, user, setUser } = useAppContext();
-  const [activePage, setActivePage] = useState("home");
+  const { sidebarOpen, setSidebarOpen, isLogin, setIsLogin, user, setUser,activePage, setActivePage } = useAppContext();
   const router = useRouter();
 
   const classrooms = [
-    { name: "Math Class", id: "ABC123", students: 25, createdAt: "2025-09-01" },
-    { name: "Science Class", id: "XYZ789", students: 18, createdAt: "2025-08-20" },
-    { name: "History Class", id: "HIS456", students: 30, createdAt: "2025-09-05" },
-  ];
+    { 
+      name: "Math Class", 
+      id: "ABC123", 
+      students: 25, 
+      createdAt: "2025-09-01",
+      videos: 12,
+      files: 8,
+      tasks: 5
+    },
+    { 
+      name: "Science Class", 
+      id: "XYZ789", 
+      students: 18, 
+      createdAt: "2025-08-20",
+      videos: 6,
+      files: 3,
+      tasks: 2
+    },
+    { 
+      name: "History Class", 
+      id: "HIS456", 
+      students: 30, 
+      createdAt: "2025-09-05",
+      videos: 9,
+      files: 7,
+      tasks: 4
+    },
+  ];  
 
   const handleLogout = () => {
     setIsLogin(false);

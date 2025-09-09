@@ -6,7 +6,7 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaCalendarAlt,
-  FaIdBadge,
+  FaChalkboardTeacher,
 } from "react-icons/fa";
 
 const Students = () => {
@@ -14,9 +14,27 @@ const Students = () => {
 
   // Example students data
   const students = [
-    { id: "STU123", name: "أحمد محمد", active: true, renewDate: "2025-10-01" },
-    { id: "STU456", name: "سارة علي", active: false, renewDate: "2025-09-20" },
-    { id: "STU789", name: "محمود حسن", active: true, renewDate: "2025-11-15" },
+    {
+      id: "STU123",
+      name: "أحمد محمد",
+      active: true,
+      renewDate: "2025-10-01",
+      classes: 3,
+    },
+    {
+      id: "STU456",
+      name: "سارة علي",
+      active: false,
+      renewDate: "2025-09-20",
+      classes: 1,
+    },
+    {
+      id: "STU789",
+      name: "محمود حسن",
+      active: true,
+      renewDate: "2025-11-15",
+      classes: 5,
+    },
   ];
 
   return (
@@ -52,9 +70,15 @@ const Students = () => {
             </div>
 
             {/* تاريخ التجديد */}
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <div className="flex items-center gap-2 text-gray-400 text-sm mb-2">
               <FaCalendarAlt className="text-[#1998e1]" />
               {student.renewDate}
+            </div>
+
+            {/* عدد الكلاسات */}
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <FaChalkboardTeacher className="text-[#1998e1]" />
+              {student.classes} كلاس
             </div>
           </div>
         ))}
