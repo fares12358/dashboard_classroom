@@ -27,7 +27,7 @@ const Students = () => {
         {students.map((student) => (
           <div
             key={student.id}
-            onClick={() => router.push(`/Pages/studentDetails/${student.id}`)}
+            onClick={() => router.push(`/Pages/StudentDetails/${student.id}`)}
             className="relative bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg cursor-pointer 
                        hover:shadow-xl hover:scale-[1.01] transition-all border border-[#2a2a2a]"
           >
