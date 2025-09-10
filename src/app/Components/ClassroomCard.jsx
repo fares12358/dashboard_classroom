@@ -8,7 +8,8 @@ import {
   FaIdBadge,
   FaVideo,
   FaFileAlt,
-  FaBookOpen
+  FaBookOpen,
+  FaFilePdf
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -63,10 +64,10 @@ export default function ClassroomCard({ name, id, students, createdAt, videos, f
             <FaVideo className="text-[#1998e1]" /> {videos}
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaFileAlt className="text-[#1998e1]" /> {files}
+            <FaFilePdf className="text-[#1998e1]" /> {files}
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaBookOpen className="text-[#1998e1]" /> {tasks}
+            <FaFileAlt className="text-[#1998e1]" /> {tasks}
           </div>
 
           {/* تاريخ الإنشاء */}

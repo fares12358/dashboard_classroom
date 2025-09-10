@@ -12,6 +12,8 @@ export const AppProvider = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [classrooms, setClassrooms] = useState([]); // store classroom data
   const [activePage, setActivePage] = useState("home");
+  const [activeTab, setActiveTab] = useState("home");
+  const [TapssidebarOpen, setTapsSidebarOpen] = useState(false);
 
   return (
     <AppContext.Provider
@@ -24,6 +26,8 @@ export const AppProvider = ({ children }) => {
         classrooms,
         setClassrooms,
         activePage, setActivePage
+        , activeTab, setActiveTab,
+        TapssidebarOpen, setTapsSidebarOpen
       }}
     >
       {children}

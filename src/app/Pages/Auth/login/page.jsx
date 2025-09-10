@@ -13,7 +13,7 @@ const LoginPage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     setIsLogin(true);
-    setUser([{id:1}]);
+    setUser([{ id: 1 }]);
     router.push(`/`);
 
   }
@@ -53,7 +53,7 @@ const LoginPage = () => {
               onClick={() => setPasswordVisible(!passwordVisible)}
               className="absolute left-3 top-3 text-[#1998e1] focus:outline-none cursor-pointer"
             >
-              {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+              {passwordVisible ? <FaEye /> : <FaEyeSlash />}
             </button>
           </div>
         </div>

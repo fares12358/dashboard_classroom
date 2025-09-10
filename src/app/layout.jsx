@@ -17,7 +17,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${cairo.variable} font-sans antialiased w-screen h-[100dvh]`}>
+      <body className={`${cairo.variable} font-sans antialiased w-screen h-screen`}>
         <AppProvider>
           {children}
           <Toaster position="top-center" reverseOrder={false} />

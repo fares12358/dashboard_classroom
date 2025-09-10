@@ -75,13 +75,13 @@ export default function HomeTab({ dummyData, onDelete }) {
           <div className="flex gap-3 mt-2">
             <button
               onClick={handleSave}
-              className="flex-1 bg-green-600/20 text-green-500 p-3 rounded-lg hover:bg-green-600/30 transition"
+              className="flex-1 bg-green-600/20 text-green-500 p-3 rounded-lg hover:bg-green-600/30 transition cursor-pointer"
             >
               حفظ
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="flex-1 bg-gray-600/20 text-gray-300 p-3 rounded-lg hover:bg-gray-600/30 transition"
+              className="flex-1 bg-gray-600/20 text-gray-300 p-3 rounded-lg hover:bg-gray-600/30 transition cursor-pointer"
             >
               إلغاء
             </button>
@@ -92,9 +92,8 @@ export default function HomeTab({ dummyData, onDelete }) {
           {/* عرض الاسم والحالة */}
           <h1 className="text-3xl font-bold text-[#1998e1] mb-2 mt-10">{className}</h1>
           <p
-            className={`flex items-center gap-2 text-sm mb-6 ${
-              status === "نشط" ? "text-green-400" : "text-yellow-400"
-            }`}
+            className={`flex items-center gap-2 text-sm mb-6 ${status === "نشط" ? "text-green-400" : "text-yellow-400"
+              }`}
           >
             {status === "نشط" ? (
               <>
@@ -111,11 +110,6 @@ export default function HomeTab({ dummyData, onDelete }) {
 
       {/* باقي تفاصيل الكلاس */}
       <div className="space-y-4 text-gray-300">
-        <p className="flex items-center gap-2">
-          <FaChalkboardTeacher className="text-[#1998e1]" />
-          <span className="font-semibold text-white">المعلم:</span>{" "}
-          {dummyData.teacher}
-        </p>
 
         <p className="flex items-center gap-2">
           <FaUsers className="text-[#1998e1]" />
