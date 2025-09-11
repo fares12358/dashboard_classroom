@@ -1,33 +1,73 @@
 "use client";
 import React from "react";
 import ReportCard from "../Components/ReportCard";
-import { FaUsers, FaDollarSign, FaChalkboardTeacher, FaClipboardList } from "react-icons/fa";
+import {
+  FaUsers,
+  FaUserCheck,
+  FaUserSlash,
+  FaDollarSign,
+  FaChalkboardTeacher,
+  FaClipboardList,
+  FaFileAlt,
+  FaVideo,
+  FaTasks,
+} from "react-icons/fa";
 
 const Reports = () => {
   const reports = [
     {
-      title: "تقرير الطلاب",
+      title: "إجمالي الطلاب",
       description: "عدد الطلاب المسجلين.",
       icon: FaUsers,
       value: 245,
     },
     {
-      title: "تقرير الأرباح",
-      description: "إجمالي الأرباح.",
+      title: "الطلاب النشطون",
+      description: "عدد الطلاب المتفاعلين.",
+      icon: FaUserCheck,
+      value: 180,
+    },
+    {
+      title: "الطلاب غير النشطين",
+      description: "عدد الطلاب غير المتفاعلين.",
+      icon: FaUserSlash,
+      value: 65,
+    },
+    {
+      title: "إجمالي الأرباح",
+      description: "الأرباح المحققة حتى الآن.",
       icon: FaDollarSign,
       value: "$12,340",
     },
     {
-      title: "تقرير الكلاسات",
-      description: "عدد الكلاسات النشطة.",
+      title: "الكلاسات النشطة",
+      description: "عدد الكلاسات الحالية.",
       icon: FaChalkboardTeacher,
       value: 18,
     },
     {
-      title: "تقرير الخطط",
-      description: "عدد الخطط التعليمية.",
+      title: "الخطط التعليمية",
+      description: "عدد الخطط المتاحة.",
       icon: FaClipboardList,
       value: 6,
+    },
+    {
+      title: "عدد الملفات",
+      description: "إجمالي الملفات المرفوعة.",
+      icon: FaFileAlt,
+      value: 42,
+    },
+    {
+      title: "عدد الفيديوهات",
+      description: "إجمالي الفيديوهات التعليمية.",
+      icon: FaVideo,
+      value: 25,
+    },
+    {
+      title: "عدد الأمتحانات",
+      description: "إجمالي المهام المضافة.",
+      icon: FaTasks,
+      value: 12,
     },
   ];
 
@@ -43,7 +83,7 @@ const Reports = () => {
             title={report.title}
             description={report.description}
             icon={report.icon}
-            value={report.value} // ✅ نمرر القيمة بدل المسار
+            value={report.value}
           />
         ))}
       </div>

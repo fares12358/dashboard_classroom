@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaTrash,
   FaEdit,
@@ -9,19 +9,33 @@ import {
   FaPaperPlane,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function NotesTab() {
   const [notes, setNotes] = useState([
     { id: 1, text: "مراجعة الواجب", date: "2025-09-10 10:30" },
-    { id: 2, text: "تحضير امتحان طويل جدًا يحتوي على تفاصيل كثيرة جدًا لكي نختبر خاصية التفاف النص داخل الفقاعة", date: "2025-09-10 12:15" },
+    {
+      id: 2,
+      text: "تحضير امتحان طويل جدًا يحتوي على تفاصيل كثيرة جدًا لكي نختبر خاصية التفاف النص داخل الفقاعة",
+      date: "2025-09-10 12:15",
+    },
   ]);
   const [newNote, setNewNote] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
 
+  const bottomRef = useRef(null);
+
+  // 🔹 Auto scroll when notes change
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [notes]);
+
   const addNote = () => {
     if (!newNote.trim()) {
-      toast.error("❌ لا يمكن إضافة ملاحظة فارغة");
+      toast.error(" لا يمكن إضافة ملاحظة فارغة");
       return;
     }
     const note = {
@@ -31,7 +45,7 @@ export default function NotesTab() {
     };
     setNotes([...notes, note]);
     setNewNote("");
-    toast.success("✅ تمت إضافة الملاحظة");
+    toast.success(" تمت إضافة الملاحظة");
   };
 
   const deleteNote = (id) => {
@@ -46,7 +60,7 @@ export default function NotesTab() {
 
   const saveEdit = () => {
     if (!editText.trim()) {
-      toast.error("❌ لا يمكن أن تكون الملاحظة فارغة");
+      toast.error(" لا يمكن أن تكون الملاحظة فارغة");
       return;
     }
     setNotes(
@@ -56,7 +70,7 @@ export default function NotesTab() {
     );
     setEditId(null);
     setEditText("");
-    toast.success("✏️ تم تعديل الملاحظة");
+    toast.success(" تم تعديل الملاحظة");
   };
 
   const cancelEdit = () => {
@@ -72,58 +86,70 @@ export default function NotesTab() {
 
       {/* منطقة عرض الملاحظات */}
       <div className="flex-1 overflow-y-auto space-y-4 p-2 hidde_scroll">
-        {notes.map((note) => (
-          <div key={note.id} className="flex justify-end">
-            <div className="bg-[#1998e1]/20 text-white p-4 rounded-2xl shadow-md flex flex-col max-w-full break-words ">
-              {editId === note.id ? (
-                <>
-                  <input
-                    type="text"
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    className="p-2 rounded-md bg-[#111] text-white outline-none mb-2"
-                  />
-                  <div className="flex gap-2 self-end">
-                    <button
-                      onClick={saveEdit}
-                      className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition"
-                    >
-                      <FaSave />
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition"
-                    >
-                      <FaTimes />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span className="mb-2 flex items-start gap-2 whitespace-pre-wrap break-words">
-                    <FaStickyNote className="text-[#1998e1] shrink-0" />
-                    <span className="break-words">{note.text}</span>
-                  </span>
-                  <span className="text-xs text-gray-400 mb-2">{note.date}</span>
-                  <div className="flex gap-3 self-end text-sm text-gray-300">
-                    <button
-                      onClick={() => startEdit(note)}
-                      className="text-yellow-400 cursor-pointer"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => deleteNote(note.id)}
-                      className="text-red-500 cursor-pointer"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
+        <AnimatePresence>
+          {notes.map((note) => (
+            <motion.div
+              key={note.id}
+              className="flex justify-end"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <div className="bg-[#1998e1]/20 text-white p-4 rounded-2xl shadow-md flex flex-col max-w-full break-words">
+                {editId === note.id ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="p-2 rounded-md bg-[#111] text-white outline-none mb-2"
+                    />
+                    <div className="flex gap-2 self-end">
+                      <button
+                        onClick={saveEdit}
+                        className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition"
+                      >
+                        <FaSave />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="mb-2 flex items-start gap-2 whitespace-pre-wrap break-words">
+                      <FaStickyNote className="text-[#1998e1] shrink-0" />
+                      <span className="break-words">{note.text}</span>
+                    </span>
+                    <span className="text-xs text-gray-400 mb-2">
+                      {note.date}
+                    </span>
+                    <div className="flex gap-3 self-end text-sm text-gray-300">
+                      <button
+                        onClick={() => startEdit(note)}
+                        className="text-yellow-400 cursor-pointer"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => deleteNote(note.id)}
+                        className="text-red-500 cursor-pointer"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={bottomRef}></div>
       </div>
 
       {/* إدخال ملاحظة جديدة */}
@@ -133,7 +159,7 @@ export default function NotesTab() {
           placeholder="✍️ أضف ملاحظة جديدة..."
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
-          className="flex-1 p-3 rounded-lg bg-[#111] border border-gray-700 text-white"
+          className="flex-1 p-3 rounded-lg bg-[#111] focus:border-[#1998e1] focus:outline-none border border-gray-700 text-white transition-all ease-in-out duration-300"
         />
         <button
           onClick={addNote}

@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import { FaCalendarAlt, FaMoneyBillWave } from "react-icons/fa";
+import { FaCalendarAlt, FaMoneyBillWave, FaInfoCircle } from "react-icons/fa";
 
-export default function PlanCard({ title, duration, price }) {
+export default function PlanCard({ title, duration, price, description }) {
   return (
     <div
       className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg 
@@ -22,6 +22,14 @@ export default function PlanCard({ title, duration, price }) {
         <FaMoneyBillWave className="text-green-400" />
         {price}
       </div>
+
+      {/* الوصف */}
+      {description && (
+        <div className="flex items-start gap-2 text-gray-400 text-sm mt-2 leading-relaxed">
+          <FaInfoCircle className="text-[#1998e1] mt-0.5" />
+          <span>{description}</span>
+        </div>
+      )}
     </div>
   );
 }
