@@ -162,11 +162,11 @@ export default function Home() {
       </aside>
 
       {/* المحتوى الرئيسي */}
-      <main className="flex-1 h-screen overflow-y-auto p-8 md:ml-0 hidde_scroll">
+      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 md:ml-0 hidde_scroll">
         {/* menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="md:hidden p-4 text-[#1998e1] text-2xl cursor-pointer fixed top-1 right-1 z-10"
+          className="md:hidden p-2 text-[#1998e1] text-2xl cursor-pointer fixed top-3 right-3 z-10 bg-[#111] rounded-xl"
         >
           <FaBars />
         </button>

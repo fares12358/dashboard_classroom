@@ -11,8 +11,8 @@ const DashboardHome = ({ classrooms }) => {
   return (
     <div>
       {/* الشريط العلوي */}
-      <div className="flex justify-start items-center mb-8">
-        <h2 className="text-2xl font-semibold mr-10">مرحباً بعودتك 👋 محمد</h2>
+      <div className="flex justify-start items-center mb-8  mr-10 md:mr-0 ">
+        <h2 className="text-2xl font-semibold">مرحباً بعودتك 👋 محمد</h2>
       </div>
 
       {/* إحصائيات لوحة التحكم */}
