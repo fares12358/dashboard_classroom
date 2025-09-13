@@ -14,7 +14,7 @@ const SuccessPage = () => {
     const checkStatus = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/auth/status/${pendingId}`
+          `https://class-room-backend-nodejs.vercel.app/api/auth/status/${pendingId}`
         );
         const data = await res.json(); // 👈 read JSON
         setStatus(data.status);        // 👈 use backend status
