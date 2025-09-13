@@ -19,45 +19,47 @@ import Reports from "./Components/Reports";
 import Students from "./Components/Students";
 import { useAppContext } from "./Context/AppContext";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { API_URL } from "./utils/api.js";
 
 export default function Home() {
-  const { sidebarOpen, setSidebarOpen, isLogin, setIsLogin, user, setUser,activePage, setActivePage } = useAppContext();
+  const { sidebarOpen, setSidebarOpen, isLogin, setIsLogin, user, setUser, activePage, setActivePage } = useAppContext();
   const router = useRouter();
 
   const classrooms = [
-    { 
-      name: "Math Class", 
-      id: "ABC123", 
-      students: 25, 
+    {
+      name: "Math Class",
+      id: "ABC123",
+      students: 25,
       createdAt: "2025-09-01",
       videos: 12,
       files: 8,
       tasks: 5
     },
-    { 
-      name: "Science Class", 
-      id: "XYZ789", 
-      students: 18, 
+    {
+      name: "Science Class",
+      id: "XYZ789",
+      students: 18,
       createdAt: "2025-08-20",
       videos: 6,
       files: 3,
       tasks: 2
     },
-    { 
-      name: "History Class", 
-      id: "HIS456", 
-      students: 30, 
+    {
+      name: "History Class",
+      id: "HIS456",
+      students: 30,
       createdAt: "2025-09-05",
       videos: 9,
       files: 7,
       tasks: 4
     },
-  ];  
+  ];
 
   const handleLogout = () => {
     setIsLogin(false);
     setUser(null);
-    localStorage.removeItem("token");
+    localStorage.removeItem("adminToken");
     router.push("/Pages/Auth/login");
   };
 
@@ -85,10 +87,41 @@ export default function Home() {
 
   // Protect route
   useEffect(() => {
+    const checkAdminToken = async () => {
+      const token = localStorage.getItem("adminToken");
+
+      if (!token) {
+        // No token, redirect to login
+        router.push("/Pages/Auth/login");
+        return;
+      }
+
+      try {
+        // Verify token with backend
+        const res = await axios.get(`${API_URL}/admin/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        // If token is valid, set admin info in context
+        setIsLogin(true);
+        setUser(res.data.admin);
+
+      } catch (err) {
+        console.error(err);
+        toast.error("جلسة المسؤول انتهت، يرجى تسجيل الدخول مرة أخرى");
+        localStorage.removeItem("adminToken");
+        setIsLogin(false);
+        setUser(null);
+        router.push("/Pages/Auth/login");
+      }
+    };
+
     if (!isLogin || !user) {
-      router.push("/Pages/Auth/login");
+      checkAdminToken();
     }
-  }, [isLogin, user]);
+  }, [isLogin, user, setIsLogin, setUser, router]);
 
   return (
     <div className="h-screen flex bg-[#090909] text-white" dir="rtl">
