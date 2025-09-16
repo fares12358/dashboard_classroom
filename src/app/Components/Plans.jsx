@@ -9,13 +9,14 @@ import {
   FaClock,
   FaFileAlt,
 } from "react-icons/fa";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import { API_URL } from "../utils/api.js";
+import { useAppContext } from "../Context/AppContext";
 
 
 const Plans = () => {
-  const [plans, setPlans] = useState([]);
+  const { plans, setPlans } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -58,8 +59,7 @@ const Plans = () => {
 
       const res = await axios.post(`${API_URL}/plans/add`, payload);
       if (!res.data?.plan) throw new Error("الخادم لم يرجع البيانات المتوقعة");
-
-      setPlans((prev) => [...prev, res.data.plan]); // ✅ Add locally without re-fetch
+      fetchPlans();
       setNewPlan({ title: "", description: "", price: "", durationValue: "", durationType: "" });
       toast.success("✅ تمت إضافة الخطة بنجاح");
     } catch (error) {
@@ -71,6 +71,7 @@ const Plans = () => {
   };
 
   useEffect(() => {
+    if (plans !== null) return
     fetchPlans();
   }, []);
 
@@ -86,6 +87,8 @@ const Plans = () => {
 
   return (
     <div>
+      <Toaster />
+
       <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0 flex items-center gap-2 text-[#1998e1]">
         <FaClipboardList /> الخطط
       </h2>
@@ -162,9 +165,8 @@ const Plans = () => {
         <button
           onClick={addPlan}
           disabled={adding}
-          className={`${
-            adding ? "bg-gray-600 cursor-not-allowed" : "bg-green-600/20 hover:bg-green-600/30"
-          } text-green-500 px-6 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer`}
+          className={`${adding ? "bg-gray-600 cursor-not-allowed" : "bg-green-600/20 hover:bg-green-600/30"
+            } text-green-500 px-6 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer`}
         >
           {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />}{" "}
           {adding ? "جاري الإضافة..." : "إضافة خطة"}
@@ -177,9 +179,9 @@ const Plans = () => {
           <FaSpinner className="animate-spin text-3xl text-[#1998e1]" />
           <span className="ml-3 text-gray-300">جارٍ تحميل الخطط...</span>
         </div>
-      ) : plans.length > 0 ? (
+      ) : plans?.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plans.map((plan, index) => (
+          {plans?.map((plan, index) => (
             <PlanCard
               key={plan._id || index}
               id={plan._id}

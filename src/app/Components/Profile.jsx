@@ -1,63 +1,93 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaUser,
   FaEnvelope,
   FaPhone,
   FaIdBadge,
-  FaCheckCircle,
-  FaTimesCircle,
   FaEdit,
   FaSave,
   FaUndo,
   FaLock,
+  FaSpinner,
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
+import axios from "axios";
+import { API_URL } from "../utils/api";
+import { useAppContext } from "../Context/AppContext";
 
 const Profile = () => {
-  const [profile, setProfile] = useState({
-    name: "أحمد محمد",
-    username: "admin123",
-    email: "admin@example.com",
-    phone: "01012345678",
-    emailVerified: false,
-  });
-
+  const { user, setUser } = useAppContext(); // بيانات الأدمن من الكونتكست
+  const [loading, setLoading] = useState(!user); // لو مفيش بيانات نعمل لود
+  const [saving, setSaving] = useState(false);
   const [passwords, setPasswords] = useState({
-    currentPassword: "",
     newPassword: "",
   });
-
   const [editing, setEditing] = useState(false);
-
   const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
+    setUser({ ...user, [e.target.name]: e.target.value });
   };
 
   const handlePasswordChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    setEditing(false);
-    setPasswords({ currentPassword: "", newPassword: "" });
-    toast.success(" تم تحديث البيانات بنجاح");
+  // ✅ حفظ التحديث
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const updateData = {
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      };
+
+      if (passwords.newPassword) {
+        updateData.password = passwords.newPassword;
+      }
+      const res = await axios.put(`http://localhost:5000/api/admin/auth/${user._id}`, updateData);
+      // ✅ إعادة التحديث في الكونتكست فقط (من غير ما نعمل ريكويست تاني)
+      setUser(res.data.newadmin);
+      toast.success("تم تحديث البيانات بنجاح ✅");
+      setEditing(false);
+      setPasswords({ newPassword: "" });
+    } catch (err) {
+      toast.error("فشل التحديث ❌");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleVerifyEmail = () => {
-    toast(" تم إرسال رابط التحقق إلى بريدك الإلكتروني", { icon: "✉️" });
-  };
+  // ✅ شاشة التحميل مع أنيميشن
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <FaSpinner className="animate-spin text-[#1998e1] text-4xl" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center text-red-500 mt-10">
+        لا توجد بيانات لعرضها ❌
+      </div>
+    );
+  }
 
   return (
-    <div className="px-0 sm:px-6 lg:px-8 w-full">
+    <div className="px-0 sm:px-6 lg:px-8 w-full animate-fadeIn">
       <Toaster position="top-center" reverseOrder={false} />
 
       <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:text-right">
         الملف الشخصي
       </h2>
 
-      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 sm:p-8 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-8">
-        {/* القسم الأول: البيانات الشخصية */}
+      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 sm:p-8 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-8 transition-all duration-300">
+        {/* البيانات الشخصية */}
         <div>
           <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
             البيانات الشخصية
@@ -72,30 +102,12 @@ const Profile = () => {
               <input
                 type="text"
                 name="name"
-                value={profile.name}
+                value={user.name || ""}
                 onChange={handleChange}
-                className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
+                className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1 transition-all"
               />
             ) : (
-              <p className="text-white">{profile.name}</p>
-            )}
-          </div>
-
-          {/* اسم المستخدم */}
-          <div className="flex flex-col gap-2 mb-4">
-            <label className="text-sm text-[#1998e1] flex items-center gap-2">
-              <FaIdBadge /> اسم المستخدم
-            </label>
-            {editing ? (
-              <input
-                type="text"
-                name="username"
-                value={profile.username}
-                onChange={handleChange}
-                className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
-              />
-            ) : (
-              <p className="text-white">{profile.username}</p>
+              <p className="text-white">{user.name}</p>
             )}
           </div>
 
@@ -104,25 +116,11 @@ const Profile = () => {
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               <FaEnvelope /> البريد الإلكتروني
             </label>
-            <div className="flex items-start gap-3 flex-col">
-              <p className="text-white">{profile.email}</p>
-              {profile.emailVerified ? (
-                <span className='flex items-center justify-center gap-1 text-green-400'>
-                  <FaCheckCircle className="text-green-400 text-lg" title="تم التحقق" /> تم التحقق
-                </span>
-              ) : (
-                <button
-                  onClick={handleVerifyEmail}
-                  className="flex items-center gap-1 text-red-400 hover:text-red-300 text-sm cursor-pointer"
-                >
-                  <FaTimesCircle /> تحقق
-                </button>
-              )}
-            </div>
+            <p className="text-white">{user.email}</p>
           </div>
 
           {/* الهاتف */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 mb-4">
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               <FaPhone /> الهاتف
             </label>
@@ -130,58 +128,80 @@ const Profile = () => {
               <input
                 type="text"
                 name="phone"
-                value={profile.phone}
+                value={user.phone || ""}
                 onChange={handleChange}
                 className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
               />
             ) : (
-              <p className="text-white">{profile.phone}</p>
+              <p className="text-white">{user.phone}</p>
+            )}
+          </div>
+
+          {/* الدور */}
+          <div className="flex flex-col gap-2 mb-4">
+            <label className="text-sm text-[#1998e1] flex items-center gap-2">
+              <FaIdBadge /> الدور
+            </label>
+            {editing ? (
+              <select
+                name="role"
+                value={user.role}
+                onChange={handleChange}
+                className="bg-[#222] text-white rounded px-2 py-1"
+              >
+                <option value="admin">مدير</option>
+                <option value="super-admin">سوبر مدير</option>
+              </select>
+            ) : (
+              <p className="text-white">{user.role}</p>
+            )}
+          </div>
+
+          {/* الحالة */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-[#1998e1] flex items-center gap-2">
+              الحالة
+            </label>
+            {editing ? (
+              <select
+                name="status"
+                value={user.status}
+                onChange={handleChange}
+                className="bg-[#222] text-white rounded px-2 py-1"
+              >
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+              </select>
+            ) : (
+              <p
+                className={`${user.status === "active" ? "text-green-400" : "text-red-400"}`}
+              >
+                {user.status === "active" ? "نشط" : "غير نشط"}
+              </p>
             )}
           </div>
         </div>
 
-        {/* القسم الثاني: كلمة المرور */}
-        <div>
-          <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
-            الأمان
-          </h3>
-
-          {editing ? (
-            <>
-              {/* كلمة المرور الحالية */}
-              <div className="flex flex-col gap-2 mb-4">
-                <label className="text-sm text-[#1998e1] flex items-center gap-2">
-                  <FaLock /> كلمة المرور الحالية
-                </label>
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={passwords.currentPassword}
-                  onChange={handlePasswordChange}
-                  className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
-                />
-              </div>
-
-              {/* كلمة المرور الجديدة */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm text-[#1998e1] flex items-center gap-2">
-                  <FaLock /> كلمة المرور الجديدة
-                </label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwords.newPassword}
-                  onChange={handlePasswordChange}
-                  className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
-                />
-              </div>
-            </>
-          ) : (
-            <p className="text-[#1998e1] text-sm">
-              ******** (مخفي) - لتغيير كلمة المرور اضغط تعديل
-            </p>
-          )}
-        </div>
+        {/* كلمة المرور */}
+        {editing && (
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
+              الأمان
+            </h3>
+            <div className="flex flex-col gap-2 mb-4">
+              <label className="text-sm text-[#1998e1] flex items-center gap-2">
+                <FaLock /> كلمة المرور الجديدة
+              </label>
+              <input
+                type="password"
+                name="newPassword"
+                value={passwords.newPassword}
+                onChange={handlePasswordChange}
+                className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
+              />
+            </div>
+          </div>
+        )}
 
         {/* الأزرار */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#2a2a2a]">
@@ -189,9 +209,16 @@ const Profile = () => {
             <>
               <button
                 onClick={handleSave}
-                className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-[#127bb5] transition w-full sm:w-auto cursor-pointer"
+                disabled={saving}
+                className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition w-full sm:w-auto cursor-pointer disabled:opacity-50"
               >
-                <FaSave /> حفظ
+                {saving ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <FaSave /> حفظ
+                  </>
+                )}
               </button>
               <button
                 onClick={() => setEditing(false)}

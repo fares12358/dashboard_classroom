@@ -1,52 +1,146 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ClassroomCard from "../Components/ClassroomCard";
+import { useAppContext } from "../Context/AppContext";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { FaPlus, FaSpinner } from "react-icons/fa";
+import { API_URL } from "../utils/api";
 
 const Classrooms = () => {
-  // بيانات تجريبية للكلاسات
-  const classrooms = [
-    { 
-      name: "Math Class", 
-      id: "ABC123", 
-      students: 25, 
-      createdAt: "2025-09-01",
-      videos: 12,
-      files: 8,
-      tasks: 5
-    },
-    { 
-      name: "Science Class", 
-      id: "XYZ789", 
-      students: 18, 
-      createdAt: "2025-08-20",
-      videos: 6,
-      files: 3,
-      tasks: 2
-    },
-    { 
-      name: "History Class", 
-      id: "HIS456", 
-      students: 30, 
-      createdAt: "2025-09-05",
-      videos: 9,
-      files: 7,
-      tasks: 4
-    },
-  ];  
+  const { classrooms, setClassrooms } = useAppContext();
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(false); // form loading
+  const [pageLoading, setPageLoading] = useState(false); // page loading (start false)
+  const [form, setForm] = useState({ name: "", description: "" });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const fetchClasses = async () => {
+    try {
+      setPageLoading(true);
+      const token = localStorage.getItem("adminToken");
+      const res = await axios.get(`${API_URL}/admin/classes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setClassrooms(res.data);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error("فشل في تحميل الكلاسات");
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // ✅ اجلب البيانات فقط لو مفيش بيانات حالياً
+    if (!classrooms || classrooms.length === 0) {
+      fetchClasses();
+    }
+  }, [classrooms]);
+
+  const handleAddClass = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.description.trim()) {
+      toast.error("الرجاء إدخال جميع البيانات");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("adminToken");
+      await axios.post(
+        `${API_URL}/admin/classes/add`,
+        form,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("تم إضافة الكلاس بنجاح ✅");
+      setForm({ name: "", description: "" });
+      setIsAdding(false);
+
+      // ✅ بعد الإضافة أعمل refetch 
+      await fetchClasses();
+    } catch (err) {
+      toast.error("فشل في إضافة الكلاس ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6  mr-10 md:mr-0 ">الكلاسات</h2>
+      <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0 text-[#1998e1]">
+        الكلاسات
+      </h2>
+
+      {/* زر إضافة كلاس */}
+      <button
+        onClick={() => setIsAdding(!isAdding)}
+        className="mb-6 bg-[#1998e1] cursor-pointer text-white px-4 py-2 rounded-xl shadow hover:bg-[#157bb8] flex items-center gap-2"
+      >
+        <FaPlus /> إضافة كلاس
+      </button>
+
+      {/* فورم الإضافة */}
+      {isAdding && (
+        <form
+          onSubmit={handleAddClass}
+          className="bg-[#1a1a1a] shadow-lg rounded-2xl p-6 mb-8 w-full text-white border border-[#1998e1]/30"
+        >
+          <div className="mb-4">
+            <label className="block text-[#1998e1] mb-2">اسم الكلاس</label>
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              className="w-full bg-[#151515] border border-[#1998e1]/40 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#1998e1] focus:outline-none text-white"
+              placeholder="أدخل اسم الكلاس"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-[#1998e1] mb-2">الوصف</label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              className="w-full bg-[#151515] border border-[#1998e1]/40 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#1998e1] focus:outline-none text-white"
+              placeholder="أدخل وصف الكلاس"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-[#1998e1] cursor-pointer text-white px-6 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-[#157bb8] disabled:opacity-50"
+          >
+            {loading ? <FaSpinner className="animate-spin" /> : "إضافة"}
+          </button>
+        </form>
+      )}
 
       {/* شبكة الكروت */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {classrooms.map((classroom) => (
-          <ClassroomCard
-            key={classroom.id}
-            {...classroom} // تمرير جميع البيانات مرة واحدة
-          />
-        ))}
-      </div>
+      {pageLoading ? (
+        <div className="flex justify-center items-center py-10 text-[#1998e1]">
+          <FaSpinner className="animate-spin text-3xl" />
+          <span className="ml-3">جاري تحميل الكلاسات...</span>
+        </div>
+      ) : classrooms?.length === 0 ? (
+        <p className="text-gray-400 text-center py-10">
+          لا توجد كلاسات حتى الآن
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {classrooms.map((classroom) => (
+            <ClassroomCard key={classroom.id} {...classroom} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

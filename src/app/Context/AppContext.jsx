@@ -7,13 +7,17 @@ const AppContext = createContext();
 // Provider Component
 export const AppProvider = ({ children }) => {
   // 🔹 Example global states
-  const [isLogin, setIsLogin] = useState(false);
-  const [user, setUser] = useState(null); // for logged-in user
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [classrooms, setClassrooms] = useState([]); // store classroom data
   const [activePage, setActivePage] = useState("home");
   const [activeTab, setActiveTab] = useState("home");
   const [TapssidebarOpen, setTapsSidebarOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
+  const [user, setUser] = useState(null);
+  const [students, setStudents] = useState(null);
+  const [classrooms,setClassrooms ] = useState(null);
+  const [plans, setPlans] = useState(null);
+  const [transactions, setTransactions] = useState(null);
+  const [pendingUsers, setpendingUsers] = useState(null);
 
   return (
     <AppContext.Provider
@@ -27,7 +31,11 @@ export const AppProvider = ({ children }) => {
         setClassrooms,
         activePage, setActivePage
         , activeTab, setActiveTab,
-        TapssidebarOpen, setTapsSidebarOpen
+        TapssidebarOpen, setTapsSidebarOpen,
+        students, setStudents,
+        plans, setPlans,
+        transactions, setTransactions,
+        pendingUsers, setpendingUsers
       }}
     >
       {children}

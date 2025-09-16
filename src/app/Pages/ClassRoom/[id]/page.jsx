@@ -46,26 +46,19 @@ export default function ClassroomDetailPage() {
     }
   };
 
-  // بيانات تجريبية للطلاب
-  const studentsData = [
-    { id: "1", name: "أحمد علي", email: "ahmed@gmail.com", phone: "01012345678", isActive: true, joinedAt: "2025-01-15" },
-    { id: "2", name: "مريم حسن", email: "mariam@gmail.com", phone: "01098765432", isActive: false, joinedAt: "2025-02-10" },
-    { id: "3", name: "علي محمد", email: "ali@gmail.com", phone: "01055555555", isActive: true, joinedAt: "2025-03-05" },
-  ];
-
   // 🔹 Function to render tab component
   const renderTabContent = () => {
     switch (activeTab) {
       case "home":
         return <HomeTab dummyData={dummyData} onDelete={handleDeleteClass} />;
       case "students":
-        return <StudentsTab students={studentsData} />;
+        return <StudentsTab classID={id}/>;
       case "videos":
         return <VideosTab />;
       case "files":
         return <FilesTab />;
       case "notes":
-        return <NotesTab />;
+        return <NotesTab classID={id} />;
       default:
         return <HomeTab dummyData={dummyData} onDelete={handleDeleteClass} />;
     }

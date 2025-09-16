@@ -33,11 +33,10 @@ export default function StudentCard({ student }) {
 
         {/* حالة الطالب */}
         <span
-          className={`text-sm font-medium flex items-center gap-2 ${
-            student.isActive ? "text-green-400" : "text-yellow-400"
-          }`}
+          className={`text-sm font-medium flex items-center gap-2 ${student.status == "active" ? "text-green-400" : "text-yellow-400"
+            }`}
         >
-          {student.isActive ? (
+          {student.status == "active" ? (
             <>
               <FaCheckCircle /> نشط
             </>
@@ -50,7 +49,11 @@ export default function StudentCard({ student }) {
 
         {/* تاريخ الانضمام */}
         <span className="text-gray-500 text-xs flex items-center gap-2">
-          <FaCalendarAlt className="text-[#1998e1]" /> انضم: {student.joinedAt}
+          <FaCalendarAlt className="text-[#1998e1]" /> انضم: {new Date(student.createdAt).toLocaleDateString("ar-EG", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </span>
       </div>
     </div>

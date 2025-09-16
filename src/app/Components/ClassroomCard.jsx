@@ -8,18 +8,27 @@ import {
   FaIdBadge,
   FaVideo,
   FaFileAlt,
-  FaBookOpen,
   FaFilePdf
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function ClassroomCard({ name, id, students, createdAt, videos, files, tasks }) {
+export default function ClassroomCard({ id, name, studentsCount, videosCount, pdfsCount, tasksCount, createdAt }) {
   const router = useRouter();
 
   // نسخ الـ ID
   const handleCopy = () => {
     navigator.clipboard.writeText(id);
     toast.success("تم نسخ الكود");
+  };
+
+  // تنسيق التاريخ
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
   };
 
   return (
@@ -47,36 +56,39 @@ export default function ClassroomCard({ name, id, students, createdAt, videos, f
         <h3 className="text-xl font-bold text-[#1998e1] mb-4">{name}</h3>
 
         <div className="grid grid-cols-2 gap-3 mt-5">
-
           {/* ID */}
           <div className="flex items-center gap-2 text-gray-300 text-sm">
             <FaIdBadge className="text-[#1998e1]" />
-            {id}
+            <span title={id}>
+              {id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id}
+            </span>
           </div>
 
           {/* عدد الطلاب */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaUsers className="text-[#1998e1]" /> {students} طالب
+            <FaUsers className="text-[#1998e1]" /> {studentsCount} طالب
           </div>
 
-          {/* إحصائيات إضافية */}
+          {/* الفيديوهات */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaVideo className="text-[#1998e1]" /> {videos}
+            <FaVideo className="text-[#1998e1]" /> {videosCount} فيديو
           </div>
+
+          {/* الملفات */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaFilePdf className="text-[#1998e1]" /> {files}
+            <FaFilePdf className="text-[#1998e1]" /> {pdfsCount} ملف
           </div>
+
+          {/* المهام */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaFileAlt className="text-[#1998e1]" /> {tasks}
+            <FaFileAlt className="text-[#1998e1]" /> {tasksCount} مهمة
           </div>
 
           {/* تاريخ الإنشاء */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaCalendarAlt className="text-[#1998e1]" /> {createdAt}
+            <FaCalendarAlt className="text-[#1998e1]" /> {formatDate(createdAt)}
           </div>
-        
         </div>
-
       </div>
     </>
   );

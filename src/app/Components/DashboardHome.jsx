@@ -1,18 +1,17 @@
 "use client";
 import React from "react";
-import {
-  FaUsers,
-  FaDollarSign,
-  FaChalkboardTeacher,
-} from "react-icons/fa";
+import { FaUsers, FaDollarSign, FaChalkboardTeacher } from "react-icons/fa";
 import ClassroomCard from "./ClassroomCard";
+import { useAppContext } from "../Context/AppContext";
 
-const DashboardHome = ({ classrooms }) => {
+const DashboardHome = () => {
+  const { user, classrooms } = useAppContext();
+
   return (
     <div>
       {/* الشريط العلوي */}
       <div className="flex justify-start items-center mb-8  mr-10 md:mr-0 ">
-        <h2 className="text-2xl font-semibold">مرحباً بعودتك 👋 محمد</h2>
+        <h2 className="text-2xl font-semibold">مرحباً بعودتك 👋 {user?.name}</h2>
       </div>
 
       {/* إحصائيات لوحة التحكم */}
@@ -25,7 +24,7 @@ const DashboardHome = ({ classrooms }) => {
           <div>
             <h3 className="text-lg font-medium text-[#1998e1]">عدد الطلاب</h3>
             <p className="text-2xl font-bold mt-2">
-              {classrooms.reduce((acc, c) => acc + c.students, 0)}
+              {classrooms?.reduce((acc, c) => acc + c.studentsCount, 0)}
             </p>
           </div>
         </div>
@@ -37,7 +36,7 @@ const DashboardHome = ({ classrooms }) => {
           </div>
           <div>
             <h3 className="text-lg font-medium text-[#1998e1]">عدد الفصول</h3>
-            <p className="text-2xl font-bold mt-2">{classrooms.length}</p>
+            <p className="text-2xl font-bold mt-2">{classrooms?.length}</p>
           </div>
         </div>
 
@@ -49,7 +48,7 @@ const DashboardHome = ({ classrooms }) => {
           <div>
             <h3 className="text-lg font-medium text-[#1998e1]">إجمالي الأرباح</h3>
             <p className="text-2xl font-bold mt-2">
-              ${classrooms.reduce((acc, c) => acc + c.students, 0) * 50}
+              ${(classrooms?.reduce((acc, c) => acc + (c.studentsCount), 0) * 50).toFixed(2)}
             </p>
           </div>
         </div>
@@ -57,14 +56,17 @@ const DashboardHome = ({ classrooms }) => {
 
       {/* قائمة الكلاسات */}
       <h2 className="text-xl font-semibold mb-4">الفصول الدراسية</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {classrooms.map((classroom, index) => (
-          <ClassroomCard
-            key={index}
-            {...classroom} // تمرير جميع البيانات مرة واحدة
-          />
-        ))}
-      </div>
+      {(!classrooms || classrooms.length === 0) ? (
+        <div className="text-center text-gray-400 mt-10">
+          لا توجد فصول دراسية متاحة حالياً
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {classrooms.map((classroom) => (
+            <ClassroomCard key={classroom.id} {...classroom} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
