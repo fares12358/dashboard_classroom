@@ -14,10 +14,17 @@ export const AppProvider = ({ children }) => {
   const [isLogin, setIsLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [students, setStudents] = useState(null);
-  const [classrooms,setClassrooms ] = useState(null);
+  const [classrooms, setClassrooms] = useState(null);
   const [plans, setPlans] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [pendingUsers, setpendingUsers] = useState(null);
+  const [studentsClass, setStudentsClass] = useState(null);
+  const [pdfsClass, setPdfsClass] = useState(null);
+  const [tasksClass, setTasksClass] = useState(null);
+  const [subtasksClass, setSubTasksClass] = useState(null);
+  const [notesClass, setNotesClass] = useState(null);
+  const [classData, setClassData] = useState(null);
+  const [classid,setClassid] = useState(null);
 
   return (
     <AppContext.Provider
@@ -35,7 +42,14 @@ export const AppProvider = ({ children }) => {
         students, setStudents,
         plans, setPlans,
         transactions, setTransactions,
-        pendingUsers, setpendingUsers
+        pendingUsers, setpendingUsers,
+        studentsClass, setStudentsClass,
+        pdfsClass, setPdfsClass,
+        tasksClass, setTasksClass,
+        subtasksClass, setSubTasksClass,
+        notesClass, setNotesClass,
+        classData, setClassData,
+        classid,setClassid
       }}
     >
       {children}

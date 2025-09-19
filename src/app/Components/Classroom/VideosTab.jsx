@@ -13,13 +13,6 @@ export default function VideosTab() {
       thumbnail: "https://res.cloudinary.com/demo/image/upload/v1234567/sample.jpg",
       date: "2025-09-10",
     },
-    {
-      name: "Next.js Guide",
-      description: "دليل عملي لـ Next.js",
-      url: "https://res.cloudinary.com/demo/video/upload/v1234567/sample2.mp4",
-      thumbnail: "https://res.cloudinary.com/demo/image/upload/v1234567/sample2.jpg",
-      date: "2025-09-11",
-    },
   ]);
 
   const [search, setSearch] = useState("");

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   FaUser,
   FaEnvelope,
@@ -10,6 +10,7 @@ import {
   FaUndo,
   FaLock,
   FaSpinner,
+  FaSyncAlt,
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
@@ -20,10 +21,10 @@ const Profile = () => {
   const { user, setUser } = useAppContext(); // بيانات الأدمن من الكونتكست
   const [loading, setLoading] = useState(!user); // لو مفيش بيانات نعمل لود
   const [saving, setSaving] = useState(false);
-  const [passwords, setPasswords] = useState({
-    newPassword: "",
-  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [passwords, setPasswords] = useState({ newPassword: "" });
   const [editing, setEditing] = useState(false);
+
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
   };
@@ -48,9 +49,8 @@ const Profile = () => {
       if (passwords.newPassword) {
         updateData.password = passwords.newPassword;
       }
-      const res = await axios.put(`http://localhost:5000/api/admin/auth/${user._id}`, updateData);
-      // ✅ إعادة التحديث في الكونتكست فقط (من غير ما نعمل ريكويست تاني)
-      setUser(res.data.newadmin);
+      const res = await axios.put(`${API_URL}/admin/auth/${user._id}`, updateData);
+      setUser(res.data.admin);
       toast.success("تم تحديث البيانات بنجاح ✅");
       setEditing(false);
       setPasswords({ newPassword: "" });
@@ -61,7 +61,23 @@ const Profile = () => {
     }
   };
 
-  // ✅ شاشة التحميل مع أنيميشن
+  // ✅ إعادة تحميل بيانات الأدمن
+  const handleRefresh = async () => {
+    if (!user?._id) return;
+    setRefreshing(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/auth/${user._id}`);
+      setUser(res.data.admin);
+      toast.success("تم تحديث البيانات ✅");
+    } catch (err) {
+      console.error("Error refreshing profile:", err);
+      toast.error("فشل في تحديث البيانات ❌");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // ✅ شاشة التحميل
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -82,9 +98,25 @@ const Profile = () => {
     <div className="px-0 sm:px-6 lg:px-8 w-full animate-fadeIn">
       <Toaster position="top-center" reverseOrder={false} />
 
-      <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:text-right">
-        الملف الشخصي
-      </h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-right">
+          الملف الشخصي
+        </h2>
+
+        {/* زر تحديث البيانات */}
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="self-end flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg transition cursor-pointer disabled:opacity-50"
+        >
+          {refreshing ? (
+            <FaSpinner className="animate-spin" />
+          ) : (
+            <FaSyncAlt />
+          )}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
 
       <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 sm:p-8 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-8 transition-all duration-300">
         {/* البيانات الشخصية */}
@@ -174,7 +206,9 @@ const Profile = () => {
               </select>
             ) : (
               <p
-                className={`${user.status === "active" ? "text-green-400" : "text-red-400"}`}
+                className={`${
+                  user.status === "active" ? "text-green-400" : "text-red-400"
+                }`}
               >
                 {user.status === "active" ? "نشط" : "غير نشط"}
               </p>

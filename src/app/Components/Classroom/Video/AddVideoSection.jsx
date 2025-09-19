@@ -7,11 +7,9 @@ export default function AddVideoSection({ onAdd }) {
     name: "",
     description: "",
     videoFile: null,
-    thumbnail: null,
   });
 
   const [preview, setPreview] = useState(null);
-  const [thumbPreview, setThumbPreview] = useState(null);
   const [progress, setProgress] = useState(0);
 
   const handleChange = (e) => {
@@ -26,24 +24,14 @@ export default function AddVideoSection({ onAdd }) {
     }
   };
 
-  const handleThumbnail = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setVideoData({ ...videoData, thumbnail: file });
-      setThumbPreview(URL.createObjectURL(file));
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
       !videoData.name ||
       !videoData.description ||
-      !videoData.videoFile ||
-      !videoData.thumbnail
-    )
-      return;
-
+      !videoData.videoFile
+    ) return;
     setProgress(0);
     const interval = setInterval(() => {
       setProgress((p) => {
@@ -54,10 +42,8 @@ export default function AddVideoSection({ onAdd }) {
             name: "",
             description: "",
             videoFile: null,
-            thumbnail: null,
           });
           setPreview(null);
-          setThumbPreview(null);
         }
         return p + 10;
       });
@@ -118,25 +104,6 @@ export default function AddVideoSection({ onAdd }) {
                 </div>
               )}
               <input type="file" accept="video/*" onChange={handleVideoFile} hidden />
-            </label>
-          </div>
-
-          {/* مربع رفع صورة الغلاف */}
-          <div className="flex flex-col gap-3">
-            <label className="w-full aspect-video border-2 border-dashed border-[#1998e1]/40 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#1998e1] transition">
-              {thumbPreview ? (
-                <img
-                  src={thumbPreview}
-                  alt="Thumbnail Preview"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-gray-400 text-sm sm:text-base">
-                  <FaImage className="text-3xl sm:text-4xl text-[#1998e1] mb-2" />
-                  <span>إرفع صورة الغلاف</span>
-                </div>
-              )}
-              <input type="file" accept="image/*" onChange={handleThumbnail} hidden />
             </label>
           </div>
         </div>

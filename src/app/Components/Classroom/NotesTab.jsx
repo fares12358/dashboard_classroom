@@ -8,14 +8,16 @@ import {
   FaStickyNote,
   FaPaperPlane,
   FaSpinner,
+  FaSyncAlt,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { API_URL } from "@/app/utils/api";
+import { useAppContext } from "@/app/Context/AppContext";
 
 export default function NotesTab({ classID }) {
-  const [notes, setNotes] = useState([]);
+  const { notesClass, setNotesClass } = useAppContext(); // ✅ من الكونتكست
   const [newNote, setNewNote] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
@@ -23,48 +25,51 @@ export default function NotesTab({ classID }) {
   const [actionLoading, setActionLoading] = useState(false);
   const bottomRef = useRef(null);
 
-  // 🔹 Auto scroll when notes change
+  // 🔹 Auto scroll
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [notes]);
+  }, [notesClass]);
 
-  // 🔹 Fetch notes on mount
+  // 🔹 Fetch notes
+  const fetchNotes = async (force = false) => {
+    if (!classID) return;
+    if (notesClass && !force) return; // ✅ لا تجيب إلا لو مش محملة أو refresh
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`);
+      setNotesClass(res.data.notes || []);
+      toast.success("✅ تم تحميل الملاحظات");
+    } catch (err) {
+      console.error(err);
+      toast.error("❌ فشل تحميل الملاحظات");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotes = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`);
-        setNotes(res.data.notes || []);
-      } catch (err) {
-        console.error(err);
-        toast.error("فشل تحميل الملاحظات");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotes();
   }, [classID]);
 
   // 🔹 Add new note
   const addNote = async () => {
     if (!newNote.trim()) {
-      toast.error(" لا يمكن إضافة ملاحظة فارغة");
+      toast.error("⚠️ لا يمكن إضافة ملاحظة فارغة");
       return;
     }
     setActionLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/admin/classe/${classID}/note`, {
+      await axios.post(`${API_URL}/admin/classe/${classID}/note`, {
         msg: newNote,
       });
-      setNotes(res.data.notes);
       setNewNote("");
-      toast.success(" تمت إضافة الملاحظة");
+      fetchNotes(true); // ✅ أعد الجلب بعد الإضافة
+      toast.success("تمت إضافة الملاحظة ✍️");
     } catch (err) {
       console.error(err);
-      toast.error("فشل إضافة الملاحظة");
+      toast.error("❌ فشل إضافة الملاحظة");
     } finally {
       setActionLoading(false);
     }
@@ -74,12 +79,12 @@ export default function NotesTab({ classID }) {
   const deleteNote = async (id) => {
     setActionLoading(true);
     try {
-      const res = await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`);
-      setNotes(res.data.notes);
+      await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`);
+      fetchNotes(true); // ✅ أعد الجلب بعد الحذف
       toast.success("🗑️ تم حذف الملاحظة");
     } catch (err) {
       console.error(err);
-      toast.error("فشل حذف الملاحظة");
+      toast.error("❌ فشل حذف الملاحظة");
     } finally {
       setActionLoading(false);
     }
@@ -94,22 +99,21 @@ export default function NotesTab({ classID }) {
   // 🔹 Save edit
   const saveEdit = async () => {
     if (!editText.trim()) {
-      toast.error(" لا يمكن أن تكون الملاحظة فارغة");
+      toast.error("⚠️ لا يمكن أن تكون الملاحظة فارغة");
       return;
     }
     setActionLoading(true);
     try {
-      const res = await axios.put(
-        `${API_URL}/admin/classe/${classID}/note/${editId}`,
-        { msg: editText }
-      );
-      setNotes(res.data.notes);
+      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, {
+        msg: editText,
+      });
       setEditId(null);
       setEditText("");
-      toast.success(" تم تعديل الملاحظة");
+      fetchNotes(true); // ✅ أعد الجلب بعد التعديل
+      toast.success("✅ تم تعديل الملاحظة");
     } catch (err) {
       console.error(err);
-      toast.error("فشل تعديل الملاحظة");
+      toast.error("❌ فشل تعديل الملاحظة");
     } finally {
       setActionLoading(false);
     }
@@ -122,11 +126,22 @@ export default function NotesTab({ classID }) {
 
   return (
     <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 flex flex-col h-[80vh]">
-      <h2 className="text-2xl font-bold text-[#1998e1] mb-4 flex items-center gap-2">
-        <FaStickyNote /> الملاحظات
-      </h2>
+      {/* Header with refresh */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
+          <FaStickyNote /> الملاحظات
+        </h2>
+        <button
+          onClick={() => fetchNotes(true)} // ✅ Refresh btn
+          disabled={loading}
+          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
+        >
+          <FaSyncAlt className={loading ? "animate-spin" : ""} />
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
 
-      {/* منطقة عرض الملاحظات */}
+      {/* Notes list */}
       <div className="flex-1 overflow-y-auto space-y-4 p-2 hidde_scroll">
         {loading ? (
           <div className="flex justify-center items-center h-full">
@@ -134,7 +149,7 @@ export default function NotesTab({ classID }) {
           </div>
         ) : (
           <AnimatePresence>
-            {notes.map((note) => (
+            {notesClass?.map((note) => (
               <motion.div
                 key={note._id}
                 className="flex justify-end"
@@ -210,7 +225,7 @@ export default function NotesTab({ classID }) {
         <div ref={bottomRef}></div>
       </div>
 
-      {/* إدخال ملاحظة جديدة */}
+      {/* New note input */}
       <div className="flex gap-2 mt-4">
         <input
           type="text"

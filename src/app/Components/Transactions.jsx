@@ -61,7 +61,7 @@ export default function Transactions() {
       ) : transactions?.length === 0 ? (
         <p className="text-gray-400 text-center">لا توجد تحويلات حالياً.</p>
       ) : (
-        <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+        <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto hidde_scroll">
           {transactions?.map((tx) => (
             <div
               key={tx.id}
@@ -86,8 +86,8 @@ export default function Transactions() {
                 <div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${tx.status === "succeeded"
-                        ? "bg-green-600 text-white"
-                        : "bg-yellow-500 text-white"
+                      ? "bg-green-600 text-white"
+                      : "bg-yellow-500 text-white"
                       }`}
                   >
                     {tx.status === "succeeded" ? "ناجحة" : "معلقة"}
@@ -98,9 +98,6 @@ export default function Transactions() {
               {/* تفاصيل الخطة */}
               <div className="flex flex-col gap-2">
                 <span className="font-semibold text-[#1998e1]">{tx.plan.title}</span>
-                <span className="text-gray-400 text-sm">
-                  {tx.plan.durationValue} {tx.plan.durationType}
-                </span>
               </div>
 
               {/* رابط الدفع */}

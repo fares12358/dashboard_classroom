@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -10,11 +10,13 @@ import {
   FaUser,
   FaEnvelope,
   FaPhone,
+  FaSync,
+  FaSpinner,
 } from "react-icons/fa";
+import { SiGmail } from "react-icons/si";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "../Context/AppContext";
 import { API_URL } from "../utils/api";
-
 
 // 🔹 Helper: format time left
 const formatTimeLeft = (ms) => {
@@ -29,47 +31,48 @@ const formatTimeLeft = (ms) => {
 export default function PendingUsers() {
   const { pendingUsers, setpendingUsers } = useAppContext();
   const [loading, setLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({}); // store timers per user
+  const [timeLeft, setTimeLeft] = useState({});
+  const [sending, setSending] = useState({}); // ⬅️ حالة إرسال الرابط لكل مستخدم
 
-  // Fetch or reuse pending users
+  // 🔹 Initialize countdowns
+  const initTimers = (users) => {
+    const timers = {};
+    users.forEach((user) => {
+      if (user.expireAt) {
+        timers[user.id] = new Date(user.expireAt).getTime() - Date.now();
+      }
+    });
+    setTimeLeft(timers);
+  };
+
+  // 🔹 Fetch function
+  const fetchPendingUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/pendingUsers`);
+      if (res.data.success) {
+        setpendingUsers(res.data.data);
+        initTimers(res.data.data);
+        toast.success("✅ تم جلب المستخدمين بنجاح");
+      } else {
+        toast.error(res.data.message || "فشل في جلب المستخدمين ❌");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء جلب المستخدمين ❌");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 🔹 Initial load
   useEffect(() => {
-    const initTimers = (users) => {
-      const timers = {};
-      users.forEach((user) => {
-        if (user.expireAt) {
-          timers[user.id] = new Date(user.expireAt).getTime() - Date.now();
-        }
-      });
-      setTimeLeft(timers);
-    };
-
-    const fetchPendingUsers = async () => {
-      if (pendingUsers && pendingUsers.length > 0) {
-        // ✅ إذا فيه بيانات في الـ Context، نعيد حساب العدادات
-        initTimers(pendingUsers);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const res = await axios.get(`${API_URL}/admin/pendingUsers`);
-        if (res.data.success) {
-          setpendingUsers(res.data.data);
-          toast.success("✅ تم جلب المستخدمين بنجاح");
-          initTimers(res.data.data);
-        } else {
-          toast.error(res.data.message || "فشل في جلب المستخدمين ❌");
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("حدث خطأ أثناء جلب المستخدمين ❌");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPendingUsers();
-  }, [pendingUsers, setpendingUsers]);
+    if (!pendingUsers || pendingUsers.length === 0) {
+      fetchPendingUsers();
+    } else {
+      initTimers(pendingUsers);
+    }
+  }, []);
 
   // 🔹 Countdown updater
   useEffect(() => {
@@ -81,7 +84,6 @@ export default function PendingUsers() {
           if (newTime > 0) {
             updated[id] = newTime;
           } else {
-            // ✅ Remove expired user from context
             setpendingUsers((users) =>
               users.filter((user) => String(user.id) !== String(id))
             );
@@ -94,14 +96,59 @@ export default function PendingUsers() {
     return () => clearInterval(interval);
   }, [setpendingUsers]);
 
+  // 🔹 Send payment link
+  const handleResendLink = async (user, remaining) => {
+    if (!user.email || !user.checkoutUrl || !remaining) {
+      toast.error("❌ لا يوجد بيانات كافية لإرسال الرابط");
+      return;
+    }
+
+    setSending((prev) => ({ ...prev, [user.id]: true }));
+
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/admin/resend-payment-link`,
+        {
+          email: user.email,
+          url: user.checkoutUrl,
+          time: remaining,
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("✅ تم إرسال رابط الدفع إلى البريد الإلكتروني");
+      } else {
+        toast.error(res.data.message || "فشل إرسال الرابط ❌");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء إرسال الرابط ❌");
+    } finally {
+      setSending((prev) => ({ ...prev, [user.id]: false }));
+    }
+  };
+
   return (
     <div className="p-6 bg-[#1a1a1a] rounded-2xl shadow-xl space-y-6">
       <Toaster position="top-center" reverseOrder={false} />
-      <h2 className="text-3xl font-bold text-[#1998e1] text-center">
-        المستخدمون المعلقون
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-[#1998e1]">
+          المستخدمون المعلقون
+        </h2>
 
-      {loading ? (
+        {/* Refresh Button */}
+        <button
+          onClick={fetchPendingUsers}
+          disabled={loading}
+          className="flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
+        >
+          {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
+
+      {/* Full page loading */}
+      {loading && pendingUsers?.length === 0 ? (
         <p className="text-gray-300 animate-pulse text-center">
           ⏳ جاري التحميل...
         </p>
@@ -125,7 +172,7 @@ export default function PendingUsers() {
                   transition={{ duration: 0.4 }}
                   className="bg-[#111] rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
                 >
-                  {/* Header: user info */}
+                  {/* Header */}
                   <div className="flex flex-col gap-2 border-b border-gray-700 pb-3">
                     <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                       <FaUser className="text-[#1998e1]" />
@@ -138,7 +185,6 @@ export default function PendingUsers() {
                       <FaPhone className="text-[#1998e1]" /> {user.phone}
                     </p>
 
-                    {/* Status with countdown */}
                     <div className="flex items-center gap-2 mt-2">
                       {remaining ? (
                         <span className="text-xs text-yellow-400 flex items-center gap-1">
@@ -200,7 +246,7 @@ export default function PendingUsers() {
                     </div>
                   )}
 
-                  {/* PendingUser checkout link */}
+                  {/* Checkout URL */}
                   {user.checkoutUrl && (
                     <a
                       href={user.checkoutUrl}
@@ -212,6 +258,20 @@ export default function PendingUsers() {
                       رابط التفعيل
                     </a>
                   )}
+
+                  {/* Resend link button */}
+                  <button
+                    onClick={() => handleResendLink(user, remaining)}
+                    disabled={sending[user.id]}
+                    className="w-full cursor-pointer mt-3 bg-[#1998e1] hover:bg-[#157bb8] text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {sending[user.id] ? (
+                      <FaSpinner className="animate-spin" />
+                    ) : (
+                      <SiGmail className="text-xl" />
+                    )}
+                    {sending[user.id] ? "جاري الإرسال..." : "إعادة إرسال الرابط"}
+                  </button>
                 </motion.div>
               );
             })}

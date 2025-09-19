@@ -1,17 +1,49 @@
 "use client";
-import React from "react";
-import { FaUsers, FaDollarSign, FaChalkboardTeacher } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaUsers, FaDollarSign, FaChalkboardTeacher, FaSpinner, FaSync } from "react-icons/fa";
 import ClassroomCard from "./ClassroomCard";
 import { useAppContext } from "../Context/AppContext";
+import axios from "axios";
+import { API_URL } from "../utils/api";
+import toast from "react-hot-toast";
 
 const DashboardHome = () => {
-  const { user, classrooms } = useAppContext();
+  const { user, classrooms, setClassrooms } = useAppContext();
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Refresh classes from API
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await axios.get(`${API_URL}/admin/classes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setClassrooms(res.data);
+      toast.success("تم تحديث الكلاسات");
+    } catch (err) {
+      console.error("Error refreshing classes:", err);
+      toast.error("فشل تحديث الكلاسات");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
       {/* الشريط العلوي */}
-      <div className="flex justify-start items-center mb-8  mr-10 md:mr-0 ">
-        <h2 className="text-2xl font-semibold">مرحباً بعودتك 👋 {user?.name}</h2>
+      <div className="flex flex-col md:flex-row justify-between items-end mb-8 mr-10 md:mr-0">
+        <h2 className="text-2xl font-semibold self-start">مرحباً بعودتك 👋 {user?.name}</h2>
+
+        {/* ✅ Refresh Button */}
+        <button
+          onClick={handleRefresh}
+          disabled={loading}
+          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
+        >
+          {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
       </div>
 
       {/* إحصائيات لوحة التحكم */}

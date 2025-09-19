@@ -1,64 +1,357 @@
 "use client";
-import React, { useState } from "react";
-import { FaSearch, FaFolderOpen, FaExclamationTriangle } from "react-icons/fa";
-import AddFileSection from "./Files/AddFileSection";
-import FileCard from "./Files/FileCard";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  FaTrash,
+  FaFilePdf,
+  FaPlus,
+  FaSpinner,
+  FaFileAlt,
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaExclamationTriangle,
+  FaSyncAlt, // refresh icon
+} from "react-icons/fa";
+import { API_URL } from "@/app/utils/api"; // centralized base url
+import { useAppContext } from "@/app/Context/AppContext";
 
-export default function FilesTab() {
-  const [files, setFiles] = useState([
-    {
-      name: "React Guide",
-      description: "ملف PDF يشرح React",
-      url: "/docs/react-guide.pdf",
-      date: "2025-09-10",
-    },
-  ]);
+export default function FilesTab({classID}) {
+  const { pdfsClass, setPdfsClass } = useAppContext(); // ✅ use global store
+  const [loading, setLoading] = useState(false);
 
-  const [search, setSearch] = useState("");
+  // Local states for upload & edit
+  const [file, setFile] = useState(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editFile, setEditFile] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const handleAddFile = (file) => {
-    setFiles([...files, file]);
+  // ✅ Fetch PDFs
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/Allfiles`);
+      setPdfsClass(res.data.pdfs || []); // store globally
+    } catch (err) {
+      console.error("Error fetching files", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredFiles = files.filter((file) =>
-    file.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // ✅ Upload PDF
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+    formData.append("name", name);
+    formData.append("description", description);
+
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API_URL}/admin/classe/${classID}/file`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // update context without extra fetch
+      setPdfsClass([...pdfsClass, res.data]);
+
+      setFile(null);
+      setName("");
+      setDescription("");
+    } catch (err) {
+      console.error("Error uploading file", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Confirm delete (open modal)
+  const handleDeleteClick = (pdfId) => {
+    setConfirmDelete(pdfId);
+  };
+
+  // ✅ Delete PDF
+  const confirmDeleteAction = async () => {
+    if (!confirmDelete) return;
+    try {
+      setLoading(true);
+      await axios.delete(`${API_URL}/admin/classe/${classID}/file/${confirmDelete}`);
+
+      // instead of manual filter -> re-fetch
+      await fetchFiles();
+    } catch (err) {
+      console.error("Error deleting file", err);
+    } finally {
+      setLoading(false);
+      setConfirmDelete(null);
+    }
+  };
+
+
+  // ✅ Cancel delete
+  const cancelDeleteAction = () => {
+    setConfirmDelete(null);
+  };
+
+  // ✅ Start editing
+  const handleEdit = (pdf) => {
+    setEditId(pdf._id);
+    setEditName(pdf.name);
+    setEditDescription(pdf.description);
+    setEditFile(null);
+  };
+
+  // ✅ Cancel edit
+  const handleCancelEdit = () => {
+    setEditId(null);
+    setEditName("");
+    setEditDescription("");
+    setEditFile(null);
+  };
+
+  // ✅ Save update
+  const handleUpdate = async (e, pdfId) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    if (editFile) formData.append("pdf", editFile);
+    formData.append("name", editName);
+    formData.append("description", editDescription);
+
+    try {
+      setLoading(true);
+      await axios.put(`${API_URL}/admin/classe/${classID}/file/${pdfId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // instead of map -> re-fetch from backend
+      await fetchFiles();
+
+      handleCancelEdit();
+    } catch (err) {
+      console.error("Error updating file", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Initial fetch only if context is empty
+  useEffect(() => {
+    if (!pdfsClass || pdfsClass.length === 0) {
+      fetchFiles();
+    }
+  }, [classID]);
 
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 space-y-6">
-      {/* العنوان */}
-      <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
-        <FaFolderOpen className="text-[#1998e1]" /> الملفات
-      </h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
+          <FaFilePdf /> ملفات PDF
+        </h2>
+        {/* ✅ Refresh button */}
+        <button
+          onClick={fetchFiles}
+          disabled={loading}
+          className="cursor-pointer bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50"
+        >
+          {loading ? (
+            <FaSpinner className="animate-spin" />
+          ) : (
+            <>
+              <FaSyncAlt />
+              <span className="hidden md:inline">تحديث</span>
+            </>
+          )}
+        </button>
+      </div>
 
-      {/* شريط البحث */}
-      <div className="relative w-full md:w-1/2">
-        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      {/* Upload form */}
+      <form
+        onSubmit={handleUpload}
+        className="bg-[#111] p-5 rounded-2xl shadow-lg space-y-4 border border-gray-800"
+      >
         <input
           type="text"
-          placeholder="ابحث عن ملف بالاسم..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-lg bg-[#111] text-white outline-none border border-gray-700 focus:border-[#1998e1] transition"
+          placeholder="اسم الملف"
+          className="w-full p-2 rounded-lg bg-[#1a1a1a] text-white focus:outline-none focus:ring-2 focus:ring-[#1998e1]"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-      </div>
+        <input
+          type="text"
+          placeholder="الوصف"
+          className="w-full p-2 rounded-lg bg-[#1a1a1a] text-white focus:outline-none focus:ring-2 focus:ring-[#1998e1]"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
 
-      {/* قسم إضافة الملف */}
-      <AddFileSection onAdd={handleAddFile} />
+        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-red-500 transition">
+          <FaFilePdf className="text-3xl text-red-500 mb-2" />
+          <span className="text-gray-400">
+            {file ? file.name : "اختر ملف PDF"}
+          </span>
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setFile(e.target.files[0])}
+            className="hidden"
+          />
+        </label>
 
-      {/* عرض الملفات */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredFiles.length > 0 ? (
-          filteredFiles.map((file, index) => (
-            <FileCard key={index} file={file} />
-          ))
-        ) : (
-          <p className="text-gray-400 flex items-center gap-2">
-            <FaExclamationTriangle className="text-yellow-500" />
-            لا يوجد ملفات مطابقة للبحث.
-          </p>
-        )}
-      </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-[#1998e1] cursor-pointer text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#147ab9] transition disabled:opacity-50"
+        >
+          {loading ? <FaSpinner className="animate-spin" /> : <><FaPlus /> رفع ملف</>}
+        </button>
+      </form>
+
+      {/* Files list */}
+      {loading && pdfsClass?.length === 0 ? (
+        <div className="flex justify-center items-center py-10">
+          <FaSpinner className="animate-spin text-[#1998e1] text-3xl" />
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {pdfsClass?.length > 0 ? (
+            pdfsClass?.map((pdf) => (
+              <div
+                key={pdf._id}
+                className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-5 rounded-xl shadow border border-[#2a2a2a] hover:border-[#1998e1] transition flex flex-col gap-3"
+              >
+                {editId === pdf._id ? (
+                  <form
+                    onSubmit={(e) => handleUpdate(e, pdf._id)}
+                    className="space-y-3"
+                  >
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full p-2 rounded bg-[#1a1a1a] text-white"
+                      placeholder="اسم الملف"
+                    />
+                    <input
+                      type="text"
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className="w-full p-2 rounded bg-[#1a1a1a] text-white"
+                      placeholder="الوصف"
+                    />
+
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-yellow-400 transition">
+                      <FaFilePdf className="text-3xl text-yellow-400 mb-2" />
+                      <span className="text-gray-400 text-sm">
+                        {editFile ? editFile.name : "اختر ملف PDF جديد (اختياري)"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e) => setEditFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="bg-green-600 px-3 py-1 rounded text-white flex items-center gap-2"
+                      >
+                        <FaSave /> حفظ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="bg-gray-500 px-3 py-1 rounded text-white flex items-center gap-2"
+                      >
+                        <FaTimes /> إلغاء
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        <FaFileAlt className="text-[#1998e1]" />
+                        {pdf.name}
+                      </h3>
+                      <div className="flex gap-3">
+                        <button
+                          className="text-yellow-400 hover:text-yellow-600 cursor-pointer"
+                          onClick={() => handleEdit(pdf)}
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="text-red-500 hover:text-red-700 cursor-pointer"
+                          onClick={() => handleDeleteClick(pdf._id)}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-gray-400 text-sm">{pdf.description}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(pdf.addedAt).toLocaleDateString("ar-EG")}
+                    </p>
+                    {pdf.url && (
+                      <a
+                        href={pdf.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#1998e1] text-sm underline flex items-center gap-1"
+                      >
+                        <FaFilePdf /> عرض الملف
+                      </a>
+                    )}
+                  </>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400">لا توجد ملفات بعد</p>
+          )}
+        </div>
+      )}
+
+      {/* ✅ Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <FaExclamationTriangle className="text-red-500 text-4xl" />
+              <h3 className="text-xl font-bold text-white">
+                هل أنت متأكد من حذف الملف؟
+              </h3>
+              <p className="text-gray-400 text-sm">
+                لا يمكن التراجع عن هذه العملية بعد الحذف.
+              </p>
+              <div className="flex gap-4 mt-4">
+                <button
+                  onClick={confirmDeleteAction}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
+                  <FaTrash /> حذف
+                </button>
+                <button
+                  onClick={cancelDeleteAction}
+                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
+                  <FaTimes /> إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   FaFilePdf,
   FaArrowLeft,
   FaStickyNote,
+  FaFileAlt,
 } from "react-icons/fa";
 import { useAppContext } from "@/app/Context/AppContext";
 
@@ -19,48 +20,38 @@ import StudentsTab from "@/app/Components/Classroom/StudentsTab";
 import VideosTab from "@/app/Components/Classroom/VideosTab";
 import FilesTab from "@/app/Components/Classroom/FilesTab";
 import NotesTab from "@/app/Components/Classroom/NotesTab";
+import TaskTab from "@/app/Components/Classroom/TaskTab";
+import ReceivedTaskTab from "@/app/Components/Classroom/ReceivedTaskTab";
 
 export default function ClassroomDetailPage() {
   const { id } = useParams();
   const { setActivePage, activeTab, setActiveTab, TapssidebarOpen, setTapsSidebarOpen } = useAppContext();
   const router = useRouter();
 
-  // بيانات تجريبية
-  const dummyData = {
-    name: "Math Class",
-    students: 25,
-    createdAt: "2025-09-01",
-    teacher: "محمد أحمد",
-    description: "كلاس خاص بالرياضيات لطلاب المرحلة الثانوية",
-  };
-
   const handleGoBack = () => {
     setActivePage("classrooms");
     router.push("/");
-  };
-
-  const handleDeleteClass = () => {
-    if (confirm("هل أنت متأكد من حذف هذا الكلاس؟")) {
-      alert("تم حذف الكلاس بنجاح");
-      router.push("/");
-    }
   };
 
   // 🔹 Function to render tab component
   const renderTabContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeTab dummyData={dummyData} onDelete={handleDeleteClass} />;
+        return <HomeTab classID={id}/>;
       case "students":
-        return <StudentsTab classID={id}/>;
+        return <StudentsTab classID={id} />;
       case "videos":
-        return <VideosTab />;
+        return <VideosTab classID={id} />;
       case "files":
-        return <FilesTab />;
+        return <FilesTab classID={id} />;
       case "notes":
         return <NotesTab classID={id} />;
+      case "taskes":
+        return <TaskTab classID={id} />;
+      case "received":
+        return <ReceivedTaskTab classID={id} />;
       default:
-        return <HomeTab dummyData={dummyData} onDelete={handleDeleteClass} />;
+        return <HomeTab classID={id} />;
     }
   };
 
@@ -119,7 +110,20 @@ export default function ClassroomDetailPage() {
             <FaFilePdf className="text-[#1998e1]" />
             الملفات
           </button>
-
+          <button
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "taskes" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            onClick={() => handleRouting("taskes")}
+          >
+            <FaFileAlt className="text-[#1998e1]" />
+            الاختبارات
+          </button>
+          <button
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "received" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            onClick={() => handleRouting("received")}
+          >
+            <FaFileAlt className="text-[#1998e1]" />
+            التسليمات
+          </button>
           <button
             className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "notes" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
             onClick={() => handleRouting("notes")}

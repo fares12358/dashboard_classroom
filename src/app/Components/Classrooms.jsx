@@ -4,7 +4,7 @@ import ClassroomCard from "../Components/ClassroomCard";
 import { useAppContext } from "../Context/AppContext";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { FaPlus, FaSpinner } from "react-icons/fa";
+import { FaPlus, FaSpinner, FaTimes, FaSyncAlt } from "react-icons/fa"; // ✅ أضفنا أيقونة التحديث
 import { API_URL } from "../utils/api";
 
 const Classrooms = () => {
@@ -12,7 +12,7 @@ const Classrooms = () => {
 
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false); // form loading
-  const [pageLoading, setPageLoading] = useState(false); // page loading (start false)
+  const [pageLoading, setPageLoading] = useState(false); // page loading
   const [form, setForm] = useState({ name: "", description: "" });
 
   const handleChange = (e) => {
@@ -27,16 +27,16 @@ const Classrooms = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClassrooms(res.data);
+      toast.success("تم تحديث الكلاسات ✅");
     } catch (error) {
       console.error("Error fetching classes:", error);
-      toast.error("فشل في تحميل الكلاسات");
+      toast.error("فشل في تحميل الكلاسات ❌");
     } finally {
       setPageLoading(false);
     }
   };
 
   useEffect(() => {
-    // ✅ اجلب البيانات فقط لو مفيش بيانات حالياً
     if (!classrooms || classrooms.length === 0) {
       fetchClasses();
     }
@@ -52,17 +52,15 @@ const Classrooms = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("adminToken");
-      await axios.post(
-        `${API_URL}/admin/classes/add`,
-        form,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post(`${API_URL}/admin/classes/add`, form, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       toast.success("تم إضافة الكلاس بنجاح ✅");
       setForm({ name: "", description: "" });
       setIsAdding(false);
 
-      // ✅ بعد الإضافة أعمل refetch 
+      // ✅ بعد الإضافة أعمل refetch
       await fetchClasses();
     } catch (err) {
       toast.error("فشل في إضافة الكلاس ❌");
@@ -73,16 +71,34 @@ const Classrooms = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0 text-[#1998e1]">
-        الكلاسات
-      </h2>
+      {/* العنوان + زر التحديث */}
+      <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
+        <h2 className="text-2xl font-bold text-[#1998e1]">الكلاسات</h2>
+        <button
+          onClick={fetchClasses}
+          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition"
+        >
+          {pageLoading ? (
+            <FaSpinner className="animate-spin" />
+          ) : (
+            <FaSyncAlt />
+          )}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
 
-      {/* زر إضافة كلاس */}
+      {/* زر إضافة / إلغاء كلاس */}
       <button
         onClick={() => setIsAdding(!isAdding)}
-        className="mb-6 bg-[#1998e1] cursor-pointer text-white px-4 py-2 rounded-xl shadow hover:bg-[#157bb8] flex items-center gap-2"
+        className={`mb-6 cursor-pointer px-4 py-2 rounded-xl shadow flex items-center gap-2 transition
+    ${
+      isAdding
+        ? "bg-red-500 hover:bg-red-600 text-white"
+        : "bg-[#1998e1] hover:bg-[#157bb8] text-white"
+    }`}
       >
-        <FaPlus /> إضافة كلاس
+        {isAdding ? <FaTimes /> : <FaPlus />}
+        {isAdding ? "إلغاء" : "إضافة كلاس"}
       </button>
 
       {/* فورم الإضافة */}
@@ -125,7 +141,7 @@ const Classrooms = () => {
       )}
 
       {/* شبكة الكروت */}
-      {pageLoading ? (
+      {pageLoading && (!classrooms || classrooms.length === 0) ? (
         <div className="flex justify-center items-center py-10 text-[#1998e1]">
           <FaSpinner className="animate-spin text-3xl" />
           <span className="ml-3">جاري تحميل الكلاسات...</span>

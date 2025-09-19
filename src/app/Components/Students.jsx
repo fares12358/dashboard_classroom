@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaChalkboardTeacher,
   FaSpinner,
+  FaSyncAlt, // ✅ refresh icon
 } from "react-icons/fa";
 import { useAppContext } from "../Context/AppContext";
 import axios from "axios";
@@ -19,31 +20,48 @@ const Students = () => {
   const { students, setStudents } = useAppContext();
   const [loading, setLoading] = useState(false);
 
-  // ✅ Fetch students
-  useEffect(() => {
-    if(students !== null) return;
-    const fetchStudents = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${API_URL}/admin/students`);
-        setStudents(res.data);
-      } catch (err) {
-        console.error("Error fetching students:", err);
-        toast.error("فشل في تحميل الطلاب");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // ✅ Function to fetch students
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/students`);
+      setStudents(res.data);
+      toast.success("تم تحديث الطلاب");
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      toast.error("فشل في تحميل الطلاب");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // ✅ Load students on first render if not already loaded
+  useEffect(() => {
+    if (students !== null) return;
     fetchStudents();
-  }, [setStudents]);
+  }, [students]);
 
   return (
     <div>
       <Toaster />
-      <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0">الطلاب</h2>
+      {/* Title + Refresh Button */}
+      <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
+        <h2 className="text-2xl font-bold">الطلاب</h2>
+        <button
+          onClick={fetchStudents}
+          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg transition"
+        >
+          {loading ? (
+            <FaSpinner className="animate-spin" />
+          ) : (
+            <FaSyncAlt />
+          )}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
 
-      {loading ? (
+      {loading && students === null ? (
+        // ✅ Show spinner only when initial load & no data
         <div className="flex justify-center items-center h-64">
           <FaSpinner className="animate-spin text-[#1998e1] text-4xl" />
         </div>
@@ -53,7 +71,7 @@ const Students = () => {
             <div
               key={student.id}
               onClick={() =>
-                router.push(`/Pages/StudentDetails/${student.id}`)
+                router.push(`/Pages/StudentDetails/${student._id}`)
               }
               className="relative bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg cursor-pointer 
                          hover:shadow-xl hover:scale-[1.01] transition-all border border-[#2a2a2a]"

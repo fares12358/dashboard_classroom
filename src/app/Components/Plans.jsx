@@ -8,17 +8,19 @@ import {
   FaDollarSign,
   FaClock,
   FaFileAlt,
+  FaSyncAlt,
+  FaSync, // ✅ added for refresh icon
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import { API_URL } from "../utils/api.js";
 import { useAppContext } from "../Context/AppContext";
 
-
 const Plans = () => {
   const { plans, setPlans } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // ✅ state for refresh btn
 
   const [newPlan, setNewPlan] = useState({
     title: "",
@@ -70,8 +72,19 @@ const Plans = () => {
     }
   };
 
+  // 🔹 Refresh Plans manually
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await fetchPlans();
+      toast.success("✅ تم تحديث الخطط");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    if (plans !== null) return
+    if (plans !== null) return;
     fetchPlans();
   }, []);
 
@@ -89,9 +102,21 @@ const Plans = () => {
     <div>
       <Toaster />
 
-      <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0 flex items-center gap-2 text-[#1998e1]">
-        <FaClipboardList /> الخطط
-      </h2>
+      {/* Title + Refresh */}
+      <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-[#1998e1]">
+          <FaClipboardList /> الخطط
+        </h2>
+        {/* ✅ Refresh Button */}
+        <button
+          onClick={handleRefresh}
+          disabled={loading}
+          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
+        >
+          {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
+          <span className="hidden md:inline">تحديث</span>
+        </button>
+      </div>
 
       {/* إضافة خطة */}
       <div className="bg-[#1a1a1a] p-6 rounded-xl shadow mb-8 border border-gray-700">
@@ -165,7 +190,9 @@ const Plans = () => {
         <button
           onClick={addPlan}
           disabled={adding}
-          className={`${adding ? "bg-gray-600 cursor-not-allowed" : "bg-green-600/20 hover:bg-green-600/30"
+          className={`${adding
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-green-600/20 hover:bg-green-600/30"
             } text-green-500 px-6 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer`}
         >
           {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />}{" "}

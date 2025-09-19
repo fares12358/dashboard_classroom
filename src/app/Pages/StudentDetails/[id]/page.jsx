@@ -27,6 +27,8 @@ const StudentDetailsPage = () => {
     if (students && id) {
       const found = students.find((s) => String(s.id) === String(id));
       setStudent(found || null);
+      console.log(found);
+      
     } else {
       router.back();
     }
