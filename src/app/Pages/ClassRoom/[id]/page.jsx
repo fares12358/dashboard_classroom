@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   FaUsers,
@@ -25,8 +25,22 @@ import ReceivedTaskTab from "@/app/Components/Classroom/ReceivedTaskTab";
 
 export default function ClassroomDetailPage() {
   const { id } = useParams();
-  const { setActivePage, activeTab, setActiveTab, TapssidebarOpen, setTapsSidebarOpen } = useAppContext();
+  const {
+    setActivePage,
+    activeTab,
+    setActiveTab,
+    TapssidebarOpen,
+    setTapsSidebarOpen,
+    openClass, // ✅ new from context
+  } = useAppContext();
   const router = useRouter();
+
+  // 🔹 Register class in context when page loads
+  useEffect(() => {
+    if (id) {
+      openClass(id);
+    }
+  }, [id, openClass]);
 
   const handleGoBack = () => {
     setActivePage("classrooms");
@@ -37,7 +51,7 @@ export default function ClassroomDetailPage() {
   const renderTabContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeTab classID={id}/>;
+        return <HomeTab classID={id} />;
       case "students":
         return <StudentsTab classID={id} />;
       case "videos":
@@ -76,11 +90,17 @@ export default function ClassroomDetailPage() {
           </button>
         </div>
         {/* classroom name */}
-        <div className="text-[#1998e1] text-2xl font-bold text-center mt-5 md:mt-0">{'math class'}</div>
+        <div className="text-[#1998e1] text-2xl font-bold text-center mt-5 md:mt-0">
+          {"math class"}
+        </div>
 
         <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-60px)]">
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "home" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+              activeTab === "home"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("home")}
           >
             <FaHome className="text-[#1998e1]" />
@@ -88,7 +108,11 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "students" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+              activeTab === "students"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("students")}
           >
             <FaUsers className="text-[#1998e1]" />
@@ -96,7 +120,11 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "videos" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+              activeTab === "videos"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("videos")}
           >
             <FaVideo className="text-[#1998e1]" />
@@ -104,28 +132,44 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "files" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+              activeTab === "files"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("files")}
           >
             <FaFilePdf className="text-[#1998e1]" />
             الملفات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "taskes" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
+              activeTab === "taskes"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("taskes")}
           >
             <FaFileAlt className="text-[#1998e1]" />
             الاختبارات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "received" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
+              activeTab === "received"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("received")}
           >
             <FaFileAlt className="text-[#1998e1]" />
             التسليمات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "notes" ? "bg-[#1998e1]/20 text-[#1998e1]" : "text-gray-300"}`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
+              activeTab === "notes"
+                ? "bg-[#1998e1]/20 text-[#1998e1]"
+                : "text-gray-300"
+            }`}
             onClick={() => handleRouting("notes")}
           >
             <FaStickyNote className="text-[#1998e1]" />

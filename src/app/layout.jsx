@@ -19,8 +19,8 @@ export default function RootLayout({ children }) {
     <html lang="ar" dir="rtl">
       <body className={`${cairo.variable} font-sans antialiased w-screen h-screen`}>
         <AppProvider>
-          {children}
-          <Toaster position="top-center" reverseOrder={false} />
+            {children}
+            <Toaster position="top-center" reverseOrder={false} />
         </AppProvider>
       </body>
     </html>

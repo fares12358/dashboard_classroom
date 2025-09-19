@@ -11,13 +11,13 @@ import {
   FaSave,
   FaTimes,
   FaExclamationTriangle,
-  FaSyncAlt, // refresh icon
+  FaSyncAlt,
 } from "react-icons/fa";
-import { API_URL } from "@/app/utils/api"; // centralized base url
+import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 
-export default function FilesTab({classID}) {
-  const { pdfsClass, setPdfsClass } = useAppContext(); // ✅ use global store
+export default function FilesTab({ classID }) {
+  const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
 
   // Local states for upload & edit
@@ -30,12 +30,23 @@ export default function FilesTab({classID}) {
   const [editDescription, setEditDescription] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
 
+  // 🔹 Ensure class slot exists
+  useEffect(() => {
+    if (classID) openClass(classID);
+  }, [classID]);
+
+  // 🔹 Get PDFs from context
+  const pdfsClass = getClassData(classID)?.files;
+
   // ✅ Fetch PDFs
-  const fetchFiles = async () => {
+  const fetchFiles = async (force = false) => {
+    if (!classID) return;
+    if (pdfsClass && !force) return; // use cache
+
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await axios.get(`${API_URL}/admin/classe/${classID}/Allfiles`);
-      setPdfsClass(res.data.pdfs || []); // store globally
+      setClassTabData(classID, "files", res.data.pdfs || []);
     } catch (err) {
       console.error("Error fetching files", err);
     } finally {
@@ -59,8 +70,7 @@ export default function FilesTab({classID}) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // update context without extra fetch
-      setPdfsClass([...pdfsClass, res.data]);
+      setClassTabData(classID, "files", [...(pdfsClass || []), res.data]);
 
       setFile(null);
       setName("");
@@ -72,32 +82,19 @@ export default function FilesTab({classID}) {
     }
   };
 
-  // ✅ Confirm delete (open modal)
-  const handleDeleteClick = (pdfId) => {
-    setConfirmDelete(pdfId);
-  };
-
   // ✅ Delete PDF
   const confirmDeleteAction = async () => {
     if (!confirmDelete) return;
     try {
       setLoading(true);
       await axios.delete(`${API_URL}/admin/classe/${classID}/file/${confirmDelete}`);
-
-      // instead of manual filter -> re-fetch
-      await fetchFiles();
+      await fetchFiles(true);
     } catch (err) {
       console.error("Error deleting file", err);
     } finally {
       setLoading(false);
       setConfirmDelete(null);
     }
-  };
-
-
-  // ✅ Cancel delete
-  const cancelDeleteAction = () => {
-    setConfirmDelete(null);
   };
 
   // ✅ Start editing
@@ -131,9 +128,7 @@ export default function FilesTab({classID}) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // instead of map -> re-fetch from backend
-      await fetchFiles();
-
+      await fetchFiles(true);
       handleCancelEdit();
     } catch (err) {
       console.error("Error updating file", err);
@@ -142,33 +137,24 @@ export default function FilesTab({classID}) {
     }
   };
 
-  // ✅ Initial fetch only if context is empty
+  // ✅ Initial fetch
   useEffect(() => {
-    if (!pdfsClass || pdfsClass.length === 0) {
-      fetchFiles();
-    }
+    fetchFiles();
   }, [classID]);
 
   return (
     <div className="space-y-6">
+      {/* Header + Refresh */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
           <FaFilePdf /> ملفات PDF
         </h2>
-        {/* ✅ Refresh button */}
         <button
-          onClick={fetchFiles}
+          onClick={() => fetchFiles(true)}
           disabled={loading}
           className="cursor-pointer bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50"
         >
-          {loading ? (
-            <FaSpinner className="animate-spin" />
-          ) : (
-            <>
-              <FaSyncAlt />
-              <span className="hidden md:inline">تحديث</span>
-            </>
-          )}
+          {loading ? <FaSpinner className="animate-spin" /> : <><FaSyncAlt /><span className="hidden md:inline">تحديث</span></>}
         </button>
       </div>
 
@@ -191,12 +177,9 @@ export default function FilesTab({classID}) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-
         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-red-500 transition">
           <FaFilePdf className="text-3xl text-red-500 mb-2" />
-          <span className="text-gray-400">
-            {file ? file.name : "اختر ملف PDF"}
-          </span>
+          <span className="text-gray-400">{file ? file.name : "اختر ملف PDF"}</span>
           <input
             type="file"
             accept="application/pdf"
@@ -204,7 +187,6 @@ export default function FilesTab({classID}) {
             className="hidden"
           />
         </label>
-
         <button
           type="submit"
           disabled={loading}
@@ -215,136 +197,94 @@ export default function FilesTab({classID}) {
       </form>
 
       {/* Files list */}
-      {loading && pdfsClass?.length === 0 ? (
-        <div className="flex justify-center items-center py-10">
-          <FaSpinner className="animate-spin text-[#1998e1] text-3xl" />
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {pdfsClass?.length > 0 ? (
-            pdfsClass?.map((pdf) => (
-              <div
-                key={pdf._id}
-                className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-5 rounded-xl shadow border border-[#2a2a2a] hover:border-[#1998e1] transition flex flex-col gap-3"
-              >
-                {editId === pdf._id ? (
-                  <form
-                    onSubmit={(e) => handleUpdate(e, pdf._id)}
-                    className="space-y-3"
-                  >
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {pdfsClass?.length > 0 ? (
+          pdfsClass.map((pdf) => (
+            <div
+              key={pdf._id}
+              className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-5 rounded-xl shadow border border-[#2a2a2a] hover:border-[#1998e1] transition flex flex-col gap-3"
+            >
+              {editId === pdf._id ? (
+                <form onSubmit={(e) => handleUpdate(e, pdf._id)} className="space-y-3">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full p-2 rounded bg-[#1a1a1a] text-white"
+                    placeholder="اسم الملف"
+                  />
+                  <input
+                    type="text"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full p-2 rounded bg-[#1a1a1a] text-white"
+                    placeholder="الوصف"
+                  />
+                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-yellow-400 transition">
+                    <FaFilePdf className="text-3xl text-yellow-400 mb-2" />
+                    <span className="text-gray-400 text-sm">
+                      {editFile ? editFile.name : "اختر ملف PDF جديد (اختياري)"}
+                    </span>
                     <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="w-full p-2 rounded bg-[#1a1a1a] text-white"
-                      placeholder="اسم الملف"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => setEditFile(e.target.files[0])}
+                      className="hidden"
                     />
-                    <input
-                      type="text"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      className="w-full p-2 rounded bg-[#1a1a1a] text-white"
-                      placeholder="الوصف"
-                    />
-
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-yellow-400 transition">
-                      <FaFilePdf className="text-3xl text-yellow-400 mb-2" />
-                      <span className="text-gray-400 text-sm">
-                        {editFile ? editFile.name : "اختر ملف PDF جديد (اختياري)"}
-                      </span>
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => setEditFile(e.target.files[0])}
-                        className="hidden"
-                      />
-                    </label>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="bg-green-600 px-3 py-1 rounded text-white flex items-center gap-2"
-                      >
-                        <FaSave /> حفظ
+                  </label>
+                  <div className="flex gap-2">
+                    <button type="submit" className="bg-green-600 px-3 py-1 rounded text-white flex items-center gap-2">
+                      <FaSave /> حفظ
+                    </button>
+                    <button type="button" onClick={handleCancelEdit} className="bg-gray-500 px-3 py-1 rounded text-white flex items-center gap-2">
+                      <FaTimes /> إلغاء
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <FaFileAlt className="text-[#1998e1]" /> {pdf.name}
+                    </h3>
+                    <div className="flex gap-3">
+                      <button className="text-yellow-400 hover:text-yellow-600 cursor-pointer" onClick={() => handleEdit(pdf)}>
+                        <FaEdit />
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className="bg-gray-500 px-3 py-1 rounded text-white flex items-center gap-2"
-                      >
-                        <FaTimes /> إلغاء
+                      <button className="text-red-500 hover:text-red-700 cursor-pointer" onClick={() => setConfirmDelete(pdf._id)}>
+                        <FaTrash />
                       </button>
                     </div>
-                  </form>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-lg flex items-center gap-2">
-                        <FaFileAlt className="text-[#1998e1]" />
-                        {pdf.name}
-                      </h3>
-                      <div className="flex gap-3">
-                        <button
-                          className="text-yellow-400 hover:text-yellow-600 cursor-pointer"
-                          onClick={() => handleEdit(pdf)}
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          className="text-red-500 hover:text-red-700 cursor-pointer"
-                          onClick={() => handleDeleteClick(pdf._id)}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-gray-400 text-sm">{pdf.description}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(pdf.addedAt).toLocaleDateString("ar-EG")}
-                    </p>
-                    {pdf.url && (
-                      <a
-                        href={pdf.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#1998e1] text-sm underline flex items-center gap-1"
-                      >
-                        <FaFilePdf /> عرض الملف
-                      </a>
-                    )}
-                  </>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-400">لا توجد ملفات بعد</p>
-          )}
-        </div>
-      )}
+                  </div>
+                  <p className="text-gray-400 text-sm">{pdf.description}</p>
+                  <p className="text-xs text-gray-500">{new Date(pdf.addedAt).toLocaleDateString("ar-EG")}</p>
+                  {pdf.url && (
+                    <a href={pdf.url} target="_blank" rel="noopener noreferrer" className="text-[#1998e1] text-sm underline flex items-center gap-1">
+                      <FaFilePdf /> عرض الملف
+                    </a>
+                  )}
+                </>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-400">لا توجد ملفات بعد</p>
+        )}
+      </div>
 
-      {/* ✅ Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
           <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
             <div className="flex flex-col items-center gap-3 text-center">
               <FaExclamationTriangle className="text-red-500 text-4xl" />
-              <h3 className="text-xl font-bold text-white">
-                هل أنت متأكد من حذف الملف؟
-              </h3>
-              <p className="text-gray-400 text-sm">
-                لا يمكن التراجع عن هذه العملية بعد الحذف.
-              </p>
+              <h3 className="text-xl font-bold text-white">هل أنت متأكد من حذف الملف؟</h3>
+              <p className="text-gray-400 text-sm">لا يمكن التراجع عن هذه العملية بعد الحذف.</p>
               <div className="flex gap-4 mt-4">
-                <button
-                  onClick={confirmDeleteAction}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                >
+                <button onClick={confirmDeleteAction} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
                   <FaTrash /> حذف
                 </button>
-                <button
-                  onClick={cancelDeleteAction}
-                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                >
+                <button onClick={() => setConfirmDelete(null)} className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
                   <FaTimes /> إلغاء
                 </button>
               </div>

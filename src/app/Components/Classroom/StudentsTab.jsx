@@ -8,19 +8,29 @@ import { useAppContext } from "@/app/Context/AppContext";
 import { FaSyncAlt } from "react-icons/fa";
 
 export default function StudentsTab({ classID }) {
-  const { studentsClass, setStudentsClass ,classid,setClassid} = useAppContext();
+  const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ جلب الطلاب
-  const fetchStudents = async () => {
+  // 🔹 Ensure class slot exists in context
+  useEffect(() => {
+    if (classID) openClass(classID);
+  }, [classID]);
+
+  // 🔹 Get students from context
+  const studentsClass = getClassData(classID)?.students;
+
+  // ✅ Fetch students
+  const fetchStudents = async (force = false) => {
     if (!classID) return;
+
+    if (studentsClass && !force) return; // use cached data
 
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}/student`);
       if (res.data.success) {
-        setStudentsClass(res.data.students);
+        setClassTabData(classID, "students", res.data.students);
         toast.success("✅ تم جلب الطلاب بنجاح");
       } else {
         toast.error(res.data.message || "فشل في جلب الطلاب ❌");
@@ -33,16 +43,16 @@ export default function StudentsTab({ classID }) {
     }
   };
 
-  // ✅ تحديث يدوي (Refresh)
+  // ✅ Manual refresh
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchStudents();
+    await fetchStudents(true); // force fetch
     setRefreshing(false);
   };
 
+  // 🔹 Initial fetch
   useEffect(() => {
     if (!classID) return;
-    if (studentsClass) return;
     fetchStudents();
   }, [classID]);
 
@@ -50,7 +60,7 @@ export default function StudentsTab({ classID }) {
     <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 space-y-4">
       <Toaster position="top-center" reverseOrder={false} />
 
-      {/* العنوان + زر التحديث */}
+      {/* Header + Refresh button */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-[#1998e1]">الطلاب</h2>
         <button
@@ -73,7 +83,7 @@ export default function StudentsTab({ classID }) {
         <p className="text-gray-300 animate-pulse">⏳ جاري التحميل...</p>
       ) : studentsClass?.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {studentsClass?.map((student) => (
+          {studentsClass.map((student) => (
             <StudentCard key={student._id} student={student} />
           ))}
         </div>

@@ -18,13 +18,43 @@ export const AppProvider = ({ children }) => {
   const [plans, setPlans] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [pendingUsers, setpendingUsers] = useState(null);
-  const [studentsClass, setStudentsClass] = useState(null);
-  const [pdfsClass, setPdfsClass] = useState(null);
-  const [tasksClass, setTasksClass] = useState(null);
-  const [subtasksClass, setSubTasksClass] = useState(null);
-  const [notesClass, setNotesClass] = useState(null);
-  const [classData, setClassData] = useState(null);
-  const [classid,setClassid] = useState(null);
+
+ 
+
+  // class
+  const [classesData, setClassesData] = useState([]);
+  // ✅ Find or create a class slot in context
+  const openClass = (id) => {
+    setClassesData((prev) => {
+      if (prev.find((c) => c.id === id)) return prev;
+      return [
+        ...prev,
+        {
+          id,
+          home: null,
+          students: null,
+          files: null,
+          tasks: null,
+          receivedTasks: null,
+          notes: null,
+          videos: null,
+        },
+      ];
+    });
+  };
+  // ✅ Save tab data for class
+  const setClassTabData = (id, tab, data) => {
+    setClassesData((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, [tab]: data } : c
+      )
+    );
+  };
+
+  // ✅ Get class data
+  const getClassData = (id) => {
+    return classesData.find((c) => c.id === id) || null;
+  };
 
   return (
     <AppContext.Provider
@@ -43,13 +73,10 @@ export const AppProvider = ({ children }) => {
         plans, setPlans,
         transactions, setTransactions,
         pendingUsers, setpendingUsers,
-        studentsClass, setStudentsClass,
-        pdfsClass, setPdfsClass,
-        tasksClass, setTasksClass,
-        subtasksClass, setSubTasksClass,
-        notesClass, setNotesClass,
-        classData, setClassData,
-        classid,setClassid
+
+       //class
+        setClassesData,
+        classesData, openClass, setClassTabData, getClassData
       }}
     >
       {children}

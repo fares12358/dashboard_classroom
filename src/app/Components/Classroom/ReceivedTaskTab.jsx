@@ -17,27 +17,36 @@ import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 
 const ReceivedTaskTab = ({ classID }) => {
-  const { subtasksClass, setSubTasksClass } = useAppContext(); // ✅ context
+  const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
 
+  // Ensure class slot exists in context
+  useEffect(() => {
+    if (classID) openClass(classID);
+  }, [classID]);
+
+  // Get cached submissions from context
+  const subtasksClass = getClassData(classID)?.submissions;
+
+  // ✅ Fetch received tasks
   const fetchTasks = async (force = false) => {
     if (!classID) return;
-    if (subtasksClass && !force) return; // ✅ don’t refetch if already loaded
+    if (subtasksClass && !force) return; // don't refetch if already loaded
 
     try {
       setLoading(true);
-      const res = await axios.get(
-        `${API_URL}/admin/class/${classID}/tasks/submissions`
-      );
-      setSubTasksClass(res.data);
+      const res = await axios.get(`${API_URL}/admin/class/${classID}/tasks/submissions`);
+      setClassTabData(classID, "submissions", res.data);
       toast.success("✅ تم تحميل المهام بنجاح");
     } catch (err) {
+      console.error(err);
       toast.error(err.response?.data?.message || "❌ فشل تحميل المهام");
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch on mount
   useEffect(() => {
     fetchTasks();
   }, [classID]);
@@ -46,13 +55,13 @@ const ReceivedTaskTab = ({ classID }) => {
     <div className="space-y-6 relative">
       <Toaster position="top-center" />
 
-      {/* Header + Refresh Button */}
+      {/* Header + Refresh */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
           <FaClipboardList /> المهام المستلمة
         </h2>
         <button
-          onClick={() => fetchTasks(true)} // ✅ force reload
+          onClick={() => fetchTasks(true)}
           disabled={loading}
           className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
         >
@@ -117,16 +126,13 @@ const ReceivedTaskTab = ({ classID }) => {
                     className="p-4 border border-gray-700 rounded-lg shadow-sm bg-[#181818] hover:bg-[#202020] transition-all"
                   >
                     <p className="flex items-center gap-2 text-gray-100 font-medium">
-                      <FaUser className="text-[#1998e1]" />{" "}
-                      {sub.student?.name || "غير معروف"}
+                      <FaUser className="text-[#1998e1]" /> {sub.student?.name || "غير معروف"}
                     </p>
                     <p className="flex items-center gap-2 text-gray-400 text-sm">
-                      <FaEnvelope className="text-gray-500" />{" "}
-                      {sub.student?.email || "بلا بريد"}
+                      <FaEnvelope className="text-gray-500" /> {sub.student?.email || "بلا بريد"}
                     </p>
                     <p className="flex items-center gap-2 text-gray-400 text-sm">
-                      <FaPhone className="text-gray-500" />{" "}
-                      {sub.student?.phone || "بلا هاتف"}
+                      <FaPhone className="text-gray-500" /> {sub.student?.phone || "بلا هاتف"}
                     </p>
                     {sub.solution?.url && (
                       <a

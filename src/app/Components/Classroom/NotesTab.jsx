@@ -17,7 +17,7 @@ import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 
 export default function NotesTab({ classID }) {
-  const { notesClass, setNotesClass } = useAppContext(); // ✅ من الكونتكست
+  const { getClassData, setClassTabData, openClass } = useAppContext();
   const [newNote, setNewNote] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
@@ -25,21 +25,22 @@ export default function NotesTab({ classID }) {
   const [actionLoading, setActionLoading] = useState(false);
   const bottomRef = useRef(null);
 
-  // 🔹 Auto scroll
+  // Ensure class exists in context
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [notesClass]);
+    if (classID) openClass(classID);
+  }, [classID]);
 
-  // 🔹 Fetch notes
+  const notesClass = getClassData(classID)?.notes;
+
+  // Fetch notes
   const fetchNotes = async (force = false) => {
     if (!classID) return;
-    if (notesClass && !force) return; // ✅ لا تجيب إلا لو مش محملة أو refresh
+    if (notesClass && !force) return;
+
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`);
-      setNotesClass(res.data.notes || []);
+      setClassTabData(classID, "notes", res.data.notes || []);
       toast.success("✅ تم تحميل الملاحظات");
     } catch (err) {
       console.error(err);
@@ -53,19 +54,19 @@ export default function NotesTab({ classID }) {
     fetchNotes();
   }, [classID]);
 
-  // 🔹 Add new note
+  // Auto scroll to bottom
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [notesClass]);
+
+  // Add note
   const addNote = async () => {
-    if (!newNote.trim()) {
-      toast.error("⚠️ لا يمكن إضافة ملاحظة فارغة");
-      return;
-    }
+    if (!newNote.trim()) return toast.error("⚠️ لا يمكن إضافة ملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.post(`${API_URL}/admin/classe/${classID}/note`, {
-        msg: newNote,
-      });
+      await axios.post(`${API_URL}/admin/classe/${classID}/note`, { msg: newNote });
       setNewNote("");
-      fetchNotes(true); // ✅ أعد الجلب بعد الإضافة
+      fetchNotes(true);
       toast.success("تمت إضافة الملاحظة ✍️");
     } catch (err) {
       console.error(err);
@@ -75,12 +76,12 @@ export default function NotesTab({ classID }) {
     }
   };
 
-  // 🔹 Delete note
+  // Delete note
   const deleteNote = async (id) => {
     setActionLoading(true);
     try {
       await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`);
-      fetchNotes(true); // ✅ أعد الجلب بعد الحذف
+      fetchNotes(true);
       toast.success("🗑️ تم حذف الملاحظة");
     } catch (err) {
       console.error(err);
@@ -90,26 +91,20 @@ export default function NotesTab({ classID }) {
     }
   };
 
-  // 🔹 Start editing
+  // Edit note
   const startEdit = (note) => {
     setEditId(note._id);
     setEditText(note.msg);
   };
 
-  // 🔹 Save edit
   const saveEdit = async () => {
-    if (!editText.trim()) {
-      toast.error("⚠️ لا يمكن أن تكون الملاحظة فارغة");
-      return;
-    }
+    if (!editText.trim()) return toast.error("⚠️ لا يمكن أن تكون الملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, {
-        msg: editText,
-      });
+      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, { msg: editText });
       setEditId(null);
       setEditText("");
-      fetchNotes(true); // ✅ أعد الجلب بعد التعديل
+      fetchNotes(true);
       toast.success("✅ تم تعديل الملاحظة");
     } catch (err) {
       console.error(err);
@@ -126,13 +121,13 @@ export default function NotesTab({ classID }) {
 
   return (
     <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 flex flex-col h-[80vh]">
-      {/* Header with refresh */}
+      {/* Header + refresh */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
           <FaStickyNote /> الملاحظات
         </h2>
         <button
-          onClick={() => fetchNotes(true)} // ✅ Refresh btn
+          onClick={() => fetchNotes(true)}
           disabled={loading}
           className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
         >
@@ -173,11 +168,7 @@ export default function NotesTab({ classID }) {
                           disabled={actionLoading}
                           className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50 cursor-pointer"
                         >
-                          {actionLoading ? (
-                            <FaSpinner className="animate-spin" />
-                          ) : (
-                            <FaSave />
-                          )}
+                          {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                         </button>
                         <button
                           onClick={cancelEdit}
@@ -208,11 +199,7 @@ export default function NotesTab({ classID }) {
                           disabled={actionLoading}
                           className="text-red-500 cursor-pointer disabled:opacity-50"
                         >
-                          {actionLoading ? (
-                            <FaSpinner className="animate-spin" />
-                          ) : (
-                            <FaTrash />
-                          )}
+                          {actionLoading ? <FaSpinner className="animate-spin" /> : <FaTrash />}
                         </button>
                       </div>
                     </>
@@ -225,7 +212,7 @@ export default function NotesTab({ classID }) {
         <div ref={bottomRef}></div>
       </div>
 
-      {/* New note input */}
+      {/* Add new note */}
       <div className="flex gap-2 mt-4">
         <input
           type="text"
@@ -239,11 +226,7 @@ export default function NotesTab({ classID }) {
           disabled={actionLoading}
           className="bg-[#1998e1]/20 text-[#1998e1] p-3 rounded-lg hover:bg-[#1998e1]/30 transition cursor-pointer disabled:opacity-50"
         >
-          {actionLoading ? (
-            <FaSpinner className="animate-spin" />
-          ) : (
-            <FaPaperPlane />
-          )}
+          {actionLoading ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />}
         </button>
       </div>
     </div>

@@ -16,10 +16,9 @@ import { useAppContext } from "@/app/Context/AppContext";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/app/utils/api";
 
-
 export default function HomeTab({ classID }) {
   const router = useRouter();
-  const { classData, setClassData } = useAppContext();
+  const { openClass, getClassData, setClassTabData } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -28,12 +27,28 @@ export default function HomeTab({ classID }) {
   const [status, setStatus] = useState("pending");
   const [description, setDescription] = useState("");
 
-  // ✅ Fetch class data
-  const fetchClass = async () => {
+  // 🔹 Ensure class slot exists in context
+  useEffect(() => {
+    openClass(classID);
+  }, [classID]);
+
+  // 🔹 Get class data from context
+  const classData = getClassData(classID)?.home;
+
+  // ✅ Fetch class data (cache-aware)
+  const fetchClass = async (force = false) => {
+    if (classData && !force) {
+      // Pre-fill inputs from context if data exists
+      setClassName(classData.name || "");
+      setStatus(classData.status || "pending");
+      setDescription(classData.description || "");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}`);
-      setClassData(res.data);
+      setClassTabData(classID, "home", res.data);
       setClassName(res.data.name);
       setStatus(res.data.status);
       setDescription(res.data.description);
@@ -46,7 +61,6 @@ export default function HomeTab({ classID }) {
   };
 
   useEffect(() => {
-    if (classData) return;
     fetchClass();
   }, [classID]);
 
@@ -59,10 +73,9 @@ export default function HomeTab({ classID }) {
         description,
         status,
       });
-
       toast.success("تم تعديل بيانات الكلاس بنجاح ✅");
       setIsEditing(false);
-      await fetchClass();
+      await fetchClass(true); // force reload
     } catch (err) {
       console.error(err);
       toast.error("فشل تعديل الكلاس");
@@ -115,7 +128,7 @@ export default function HomeTab({ classID }) {
 
         {/* زر تحديث البيانات */}
         <button
-          onClick={fetchClass}
+          onClick={() => fetchClass(true)}
           className="absolute top-4 right-16 text-green-500 hover:text-green-400 bg-green-600/20 p-3 rounded-full transition cursor-pointer"
         >
           <FaSync className={`text-md ${loading ? "animate-spin" : ""}`} />
