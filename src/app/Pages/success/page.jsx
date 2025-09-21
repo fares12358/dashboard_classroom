@@ -4,17 +4,17 @@ import { useSearchParams } from "next/navigation";
 
 const SuccessPage = () => {
   const searchParams = useSearchParams();
-  const pendingId = searchParams.get("pendingId");
+  const id = searchParams.get("id");
 
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
-    if (!pendingId) return;
+    if (!id) return;
 
     const checkStatus = async () => {
       try {
         const res = await fetch(
-          `https://class-room-backend-nodejs.vercel.app/api/auth/status/${pendingId}`
+          `https://class-room-backend-nodejs.vercel.app/api/auth/status/${id}`
         );
         const data = await res.json(); // 👈 read JSON
         setStatus(data.status);        // 👈 use backend status
@@ -26,7 +26,7 @@ const SuccessPage = () => {
     };
 
     checkStatus();
-  }, [pendingId]);
+  }, [id]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-center p-6">

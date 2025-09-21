@@ -5,7 +5,7 @@ import axios from "axios";
 
 const CancelPage = () => {
   const searchParams = useSearchParams();
-  const pendingId = searchParams.get("pendingId");
+  const id = searchParams.get("id");
 
   const [pendingData, setPendingData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,12 +13,12 @@ const CancelPage = () => {
 
   // ✅ Fetch pending user data
   useEffect(() => {
-    if (!pendingId) return;
+    if (!id) return;
 
     const fetchPendingUser = async () => {
       try {
         const res = await axios.get(
-          `https://class-room-backend-nodejs.vercel.app/api/auth/pending/${pendingId}`
+          `https://class-room-backend-nodejs.vercel.app/api/auth/pending/${id}`
         );
         setPendingData(res.data);
       } catch (err) {
@@ -27,16 +27,16 @@ const CancelPage = () => {
     };
 
     fetchPendingUser();
-  }, [pendingId]);
+  }, [id]);
 
   // ✅ Retry payment handler
   const handleRetryPayment = async () => {
-    if (!pendingId) return;
+    if (!id) return;
     setRetrying(true);
     try {
       const res = await axios.post(
         `https://class-room-backend-nodejs.vercel.app/api/payment/re-payment`,
-        { pendingId }
+        { id }
       );
       if (res.data.url) {
         window.location.href = res.data.url; // redirect to Stripe Checkout
