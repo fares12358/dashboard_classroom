@@ -39,7 +39,7 @@ export default function AddVideoSection({ classID, onAdd }) {
   const handleLogin = () => {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id:
-        "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com", // 👈 استبدل بالـ Client ID
+        "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com", 
       scope: "https://www.googleapis.com/auth/youtube.upload",
       callback: (tokenResponse) => {
         setAuthToken(tokenResponse.access_token);
@@ -54,8 +54,6 @@ export default function AddVideoSection({ classID, onAdd }) {
   // ====== Save metadata in backend ======
   const saveVideoMetadata = async (classID, video) => {
     try {
-      console.log('vd',video);
-      
       const response = await axios.post(
         `http://localhost:5000/api/admin/classe/${classID}/video`,
         {
@@ -67,7 +65,7 @@ export default function AddVideoSection({ classID, onAdd }) {
       return response.data;
     } catch (err) {
       console.error("Error saving video metadata:", err.response || err);
-      toast.error("فشل حفظ بيانات الفيديو ⚠️");
+      toast.error("⚠️ فشل حفظ بيانات الفيديو");
       throw err;
     }
   };
@@ -75,12 +73,17 @@ export default function AddVideoSection({ classID, onAdd }) {
   // ====== Upload to YouTube ======
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!videoData.name || !videoData.description || !videoData.videoFile) return;
-    toast.error("الرجاء إدخال كل البيانات المطلوبة ⚠️");
-    if (!authToken) {
-      toast.error("سجّل دخول Google أولاً ⚠️");
+
+    if (!videoData.name || !videoData.description || !videoData.videoFile) {
+      toast.error("⚠️ الرجاء إدخال كل البيانات المطلوبة");
       return;
     }
+    if (!authToken) {
+      toast.error("⚠️ سجّل دخول Google أولاً");
+      return;
+    }
+
+    toast.loading("⏳ جاري رفع الفيديو...");
 
     try {
       // 1️⃣ Start resumable upload
@@ -120,6 +123,7 @@ export default function AddVideoSection({ classID, onAdd }) {
       };
 
       xhr.onload = async () => {
+        toast.dismiss(); // يشيل الـ "loading"
         if (xhr.status === 200) {
           const data = JSON.parse(xhr.responseText);
 
@@ -144,7 +148,7 @@ export default function AddVideoSection({ classID, onAdd }) {
             setPreview(null);
             setProgress(0);
             toast.success("✅ تم رفع الفيديو وحفظ البيانات بنجاح");
-          } catch (err) {
+          } catch {
             toast.error("⚠️ فشل في حفظ البيانات");
           }
         } else {
@@ -154,11 +158,13 @@ export default function AddVideoSection({ classID, onAdd }) {
       };
 
       xhr.onerror = () => {
+        toast.dismiss();
         toast.error("⚠️ حدث خطأ أثناء الرفع");
       };
 
       xhr.send(videoData.videoFile);
     } catch (err) {
+      toast.dismiss();
       console.error("Upload failed:", err);
       toast.error("⚠️ فشل رفع الفيديو. تحقق من الكونسول للتفاصيل");
     }
@@ -169,11 +175,10 @@ export default function AddVideoSection({ classID, onAdd }) {
       onSubmit={handleSubmit}
       className="bg-[#111] rounded-xl shadow-md p-4 sm:p-6 mb-6 flex flex-col gap-5"
     >
-      <Toaster/>
+      <Toaster />
       <h3 className="text-lg sm:text-xl font-bold text-[#1998e1] flex items-center gap-2">
         <FaUpload /> إضافة فيديو جديد
       </h3>
-
 
       {!authToken && (
         <button
