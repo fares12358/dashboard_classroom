@@ -174,7 +174,7 @@ export default function TaskTab() {
         <button
           onClick={() => fetchTasks(true)}
           disabled={loading}
-          className="c-po px-4 py-2 rounded-lg bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] flex items-center gap-2 transition disabled:opacity-50"
+          className="cursor-pointer px-4 py-2 rounded-lg bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] flex items-center gap-2 transition disabled:opacity-50"
         >
           {loading ? <FaSpinner className="animate-spin" /> : <><FaSyncAlt /><span className="hidden md:inline">تحديث</span></>}
         </button>

@@ -4,7 +4,7 @@ import VideoCard from "./Video/VideoCard";
 import AddVideoSection from "./Video/AddVideoSection";
 import { FaSearch, FaVideo, FaExclamationTriangle } from "react-icons/fa";
 
-export default function VideosTab() {
+export default function VideosTab({classID}) {
   const [videos, setVideos] = useState([
     {
       name: "React Basics",
@@ -17,9 +17,6 @@ export default function VideosTab() {
 
   const [search, setSearch] = useState("");
 
-  const handleAddVideo = (video) => {
-    setVideos([...videos, video]);
-  };
 
   // فلترة الفيديوهات حسب البحث
   const filteredVideos = videos.filter((video) =>
@@ -46,7 +43,7 @@ export default function VideosTab() {
       </div>
 
       {/* قسم إضافة الفيديو */}
-      <AddVideoSection onAdd={handleAddVideo} />
+      <AddVideoSection classID={classID} />
 
       {/* عرض الفيديوهات */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

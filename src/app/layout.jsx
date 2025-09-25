@@ -2,6 +2,7 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "./Context/AppContext";
 import { Toaster } from "react-hot-toast";
+import Script from "next/script";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -19,8 +20,13 @@ export default function RootLayout({ children }) {
     <html lang="ar" dir="rtl">
       <body className={`${cairo.variable} font-sans antialiased w-screen h-screen`}>
         <AppProvider>
-            {children}
-            <Toaster position="top-center" reverseOrder={false} />
+          {/* Google Identity Services script */}
+          <Script
+            src="https://accounts.google.com/gsi/client"
+            strategy="beforeInteractive"
+          />
+          {children}
+          <Toaster position="top-center" reverseOrder={false} />
         </AppProvider>
       </body>
     </html>
