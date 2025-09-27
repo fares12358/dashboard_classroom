@@ -18,6 +18,8 @@ export const AppProvider = ({ children }) => {
   const [plans, setPlans] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [pendingUsers, setpendingUsers] = useState(null);
+  const [reports, setReports] = useState(null);
+  const [homeReport,setHomeReport] = useState(null);
 
  
 
@@ -73,10 +75,11 @@ export const AppProvider = ({ children }) => {
         plans, setPlans,
         transactions, setTransactions,
         pendingUsers, setpendingUsers,
-
        //class
         setClassesData,
-        classesData, openClass, setClassTabData, getClassData
+        classesData, openClass, setClassTabData, getClassData,
+        reports, setReports,
+        homeReport,setHomeReport
       }}
     >
       {children}

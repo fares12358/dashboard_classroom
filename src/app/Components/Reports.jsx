@@ -4,14 +4,16 @@ import ReportCard from "../Components/ReportCard";
 import * as FaIcons from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { API_URL } from "../utils/api";
+import { useAppContext } from "../Context/AppContext";
 
 const Reports = () => {
-  const [reports, setReports] = useState([]);
+  const { reports, setReports } = useAppContext();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
+        if (reports) return;
         setLoading(true);
         const res = await fetch(`${API_URL}/admin/reportes`);
         if (!res.ok) throw new Error("فشل تحميل البيانات");
@@ -30,7 +32,6 @@ const Reports = () => {
         setLoading(false);
       }
     };
-
     fetchReports();
   }, []);
 
