@@ -31,6 +31,8 @@ export default function StudentsTab({ classID }) {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}/student`);
       if (res.data.success) {
         setClassTabData(classID, "students", res.data.students);
+        console.log(res.data.students);
+        
         toast.success("✅ تم جلب الطلاب بنجاح");
       } else {
         toast.error(res.data.message || "فشل في جلب الطلاب ❌");
@@ -82,9 +84,9 @@ export default function StudentsTab({ classID }) {
       {loading ? (
         <p className="text-gray-300 animate-pulse">⏳ جاري التحميل...</p>
       ) : studentsClass?.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {studentsClass.map((student) => (
-            <StudentCard key={student._id} student={student} />
+            <StudentCard key={student._id} classID={classID} student={student} />
           ))}
         </div>
       ) : (

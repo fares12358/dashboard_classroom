@@ -91,7 +91,7 @@ export default function ClassroomDetailPage() {
         </div>
         {/* classroom name */}
         <div className="text-[#1998e1] text-2xl font-bold text-center mt-5 md:mt-0">
-          {"math class"}
+          {"classroom"}
         </div>
 
         <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-60px)]">

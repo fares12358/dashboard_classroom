@@ -15,12 +15,10 @@ import {
   FaFilePdf,
   FaSyncAlt,
 } from "react-icons/fa";
-import { useParams } from "next/navigation";
 import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 
-export default function TaskTab() {
-  const { id } = useParams(); // classId
+export default function TaskTab({classID}) {
   const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
 
@@ -40,21 +38,21 @@ export default function TaskTab() {
 
   // Ensure class slot exists in context
   useEffect(() => {
-    if (id) openClass(id);
-  }, [id]);
+    if (classID) openClass(classID);
+  }, [classID]);
 
   // Get tasks from context
-  const tasksClass = getClassData(id)?.tasks;
+  const tasksClass = getClassData(classID)?.tasks;
 
   // ✅ Fetch tasks
   const fetchTasks = async (force = false) => {
-    if (!id) return;
+    if (!classID) return;
     if (tasksClass && !force) return; // use cached
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/class/${id}/tasks`);
-      setClassTabData(id, "tasks", res.data.tasks || []);
+      const res = await axios.get(`${API_URL}/admin/class/${classID}/tasks`);
+      setClassTabData(classID, "tasks", res.data.tasks || []);
     } catch (err) {
       console.error("Error fetching tasks", err);
       toast.error("فشل جلب المهام");
@@ -75,12 +73,12 @@ export default function TaskTab() {
 
     try {
       setLoading(true);
-      const res = await axios.post(`${API_URL}/admin/class/${id}/task`, formData, {
+      const res = await axios.post(`${API_URL}/admin/class/${classID}/task`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       // Update context
-      setClassTabData(id, "tasks", [...(tasksClass || []), res.data]);
+      await fetchTasks(true);
 
       toast.success("تمت إضافة المهمة بنجاح");
       setName("");
@@ -120,7 +118,7 @@ export default function TaskTab() {
 
     try {
       setLoading(true);
-      await axios.put(`${API_URL}/admin/class/${id}/task/${taskId}`, formData, {
+      await axios.put(`${API_URL}/admin/class/${classID}/task/${taskId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -144,7 +142,7 @@ export default function TaskTab() {
     if (!confirmDelete) return;
     try {
       setLoading(true);
-      await axios.delete(`${API_URL}/admin/class/${id}/task/${confirmDelete}`);
+      await axios.delete(`http://localhost:5000/api/admin/class/${classID}/task/${confirmDelete}`);
       toast.success("تم حذف المهمة بنجاح");
       fetchTasks(true); // update context
     } catch (err) {
@@ -161,7 +159,7 @@ export default function TaskTab() {
   // Fetch tasks on mount if empty
   useEffect(() => {
     fetchTasks();
-  }, [id]);
+  }, [classID]);
 
   return (
     <div className="space-y-6">

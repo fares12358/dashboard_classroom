@@ -77,24 +77,6 @@ export default function Home() {
   };
 
   const renderContent = () => {
-    if (activePage === "classrooms") {
-      if (errorClasses) {
-        return (
-          <div className="text-center text-red-500 mt-10">
-            فشل تحميل الكلاسات: {errorClasses}
-          </div>
-        );
-      }
-      if (!classrooms || classrooms.length === 0) {
-        return (
-          <div className="text-center text-gray-400 mt-10">
-            لا توجد كلاسات متاحة حالياً
-          </div>
-        );
-      }
-      return <Classrooms classrooms={classrooms} />;
-    }
-
     switch (activePage) {
       case "students":
         return <Students />;
@@ -108,6 +90,8 @@ export default function Home() {
         return <Transactions />;
       case "pending":
         return <PendingUsers />;
+      case "classrooms":
+        return <Classrooms />;
       default:
         return <DashboardHome />;
     }

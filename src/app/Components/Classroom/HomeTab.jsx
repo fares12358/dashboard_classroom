@@ -84,11 +84,28 @@ export default function HomeTab({ classID }) {
     }
   };
 
+  const getFreshToken = () =>
+    new Promise((resolve) => {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id:
+          "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com",
+        scope:
+          "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl",
+        callback: (tokenResponse) => resolve(tokenResponse.access_token),
+      });
+      client.requestAccessToken({ prompt: "consent" });
+    });
+
   // ✅ Delete class
   const onDelete = async () => {
     setLoading(true);
     try {
-      await axios.delete(`${API_URL}/admin/classe/${classID}`);
+      const yt_token = await getFreshToken();
+      await axios.delete(`http://localhost:5000/api/admin/classe/${classID}`,
+        {
+          headers: { Authorization: `Bearer ${yt_token}` },
+        }
+      );
       toast.success("تم حذف الكلاس بنجاح 🗑️");
       setShowDeleteModal(false);
       router.push("/");
@@ -203,11 +220,10 @@ export default function HomeTab({ classID }) {
               {classData?.name}
             </h1>
             <p
-              className={`flex items-center gap-2 text-sm mb-6 ${
-                classData?.status === "active"
-                  ? "text-green-400"
-                  : "text-yellow-400"
-              }`}
+              className={`flex items-center gap-2 text-sm mb-6 ${classData?.status === "active"
+                ? "text-green-400"
+                : "text-yellow-400"
+                }`}
             >
               {classData?.status === "active" ? (
                 <>

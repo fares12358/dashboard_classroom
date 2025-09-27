@@ -1,26 +1,42 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import VideoCard from "./Video/VideoCard";
 import AddVideoSection from "./Video/AddVideoSection";
 import { FaSearch, FaVideo, FaExclamationTriangle } from "react-icons/fa";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { API_URL } from "@/app/utils/api";
 
-export default function VideosTab({classID}) {
-  const [videos, setVideos] = useState([
-    {
-      name: "React Basics",
-      description: "مقدمة في مكتبة React",
-      url: "https://res.cloudinary.com/demo/video/upload/v1234567/sample.mp4",
-      thumbnail: "https://res.cloudinary.com/demo/image/upload/v1234567/sample.jpg",
-      date: "2025-09-10",
-    },
-  ]);
-
+export default function VideosTab({ classID }) {
+  const [videos, setVideos] = useState([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // ✅ جلب الفيديوهات من الـ backend
+  const fetchVideos = async () => {
+    if (!classID) return;
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${API_URL}/admin/classe/${classID}/video`
+      );
+      setVideos(res.data.videos || []);
+    } catch (err) {
+      console.error("❌ Error fetching videos:", err);
+      toast.error("فشل في تحميل الفيديوهات");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // فلترة الفيديوهات حسب البحث
+  // ✅ تحميل الفيديوهات عند فتح التاب أو تغيير classID
+  useEffect(() => {
+    fetchVideos();
+  }, [classID]);
+
+  // ✅ فلترة الفيديوهات بالبحث
   const filteredVideos = videos.filter((video) =>
-    video.name.toLowerCase().includes(search.toLowerCase())
+    video.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -42,18 +58,26 @@ export default function VideosTab({classID}) {
         />
       </div>
 
-      {/* قسم إضافة الفيديو */}
-      <AddVideoSection classID={classID} />
+      {/* إضافة الفيديو */}
+      <AddVideoSection classID={classID} onAdd={fetchVideos} />
 
       {/* عرض الفيديوهات */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredVideos.length > 0 ? (
-          filteredVideos.map((video, index) => (
-            <VideoCard key={index} video={video} />
+        {loading ? (
+          <p className="text-gray-400">⏳ جاري تحميل الفيديوهات...</p>
+        ) : filteredVideos.length > 0 ? (
+          filteredVideos.map((video) => (
+            <VideoCard
+              key={video._id}
+              classID={classID}
+              onDelete={fetchVideos}
+              video={video}
+            />
           ))
         ) : (
           <p className="text-gray-400 flex items-center gap-2">
-            <FaExclamationTriangle className="text-yellow-500" /> لا يوجد نتائج مطابقة للبحث.
+            <FaExclamationTriangle className="text-yellow-500" /> لا يوجد نتائج
+            فيديوهات.
           </p>
         )}
       </div>

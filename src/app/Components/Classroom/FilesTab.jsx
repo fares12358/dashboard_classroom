@@ -70,7 +70,7 @@ export default function FilesTab({ classID }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setClassTabData(classID, "files", [...(pdfsClass || []), res.data]);
+      await fetchFiles(true);
 
       setFile(null);
       setName("");

@@ -4,7 +4,7 @@ import ClassroomCard from "../Components/ClassroomCard";
 import { useAppContext } from "../Context/AppContext";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { FaPlus, FaSpinner, FaTimes, FaSyncAlt } from "react-icons/fa"; // ✅ أضفنا أيقونة التحديث
+import { FaPlus, FaSpinner, FaTimes, FaSyncAlt } from "react-icons/fa";
 import { API_URL } from "../utils/api";
 
 const Classrooms = () => {
@@ -15,10 +15,12 @@ const Classrooms = () => {
   const [pageLoading, setPageLoading] = useState(false); // page loading
   const [form, setForm] = useState({ name: "", description: "" });
 
+  // Update form state
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Fetch all classes
   const fetchClasses = async () => {
     try {
       setPageLoading(true);
@@ -26,6 +28,8 @@ const Classrooms = () => {
       const res = await axios.get(`${API_URL}/admin/classes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log(res.data);
+      
       setClassrooms(res.data);
       toast.success("تم تحديث الكلاسات ✅");
     } catch (error) {
@@ -40,11 +44,16 @@ const Classrooms = () => {
     if (!classrooms || classrooms.length === 0) {
       fetchClasses();
     }
-  }, [classrooms]);
+  }, []);
 
+  // Add new class
   const handleAddClass = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.description.trim()) {
+
+    const name = form.name.trim();
+    const description = form.description.trim();
+
+    if (!name || !description) {
       toast.error("الرجاء إدخال جميع البيانات");
       return;
     }
@@ -52,17 +61,20 @@ const Classrooms = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("adminToken");
-      await axios.post(`${API_URL}/admin/classes/add`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        `${API_URL}/admin/classe/add`,
+        { name, description },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       toast.success("تم إضافة الكلاس بنجاح ✅");
       setForm({ name: "", description: "" });
       setIsAdding(false);
 
-      // ✅ بعد الإضافة أعمل refetch
+      // Refresh classes list
       await fetchClasses();
     } catch (err) {
+      console.error(err);
       toast.error("فشل في إضافة الكلاس ❌");
     } finally {
       setLoading(false);
@@ -77,12 +89,9 @@ const Classrooms = () => {
         <button
           onClick={fetchClasses}
           className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition"
+          disabled={pageLoading}
         >
-          {pageLoading ? (
-            <FaSpinner className="animate-spin" />
-          ) : (
-            <FaSyncAlt />
-          )}
+          {pageLoading ? <FaSpinner className="animate-spin" /> : <FaSyncAlt />}
           <span className="hidden md:inline">تحديث</span>
         </button>
       </div>
@@ -91,11 +100,7 @@ const Classrooms = () => {
       <button
         onClick={() => setIsAdding(!isAdding)}
         className={`mb-6 cursor-pointer px-4 py-2 rounded-xl shadow flex items-center gap-2 transition
-    ${
-      isAdding
-        ? "bg-red-500 hover:bg-red-600 text-white"
-        : "bg-[#1998e1] hover:bg-[#157bb8] text-white"
-    }`}
+          ${isAdding ? "bg-red-500 hover:bg-red-600 text-white" : "bg-[#1998e1] hover:bg-[#157bb8] text-white"}`}
       >
         {isAdding ? <FaTimes /> : <FaPlus />}
         {isAdding ? "إلغاء" : "إضافة كلاس"}
@@ -147,9 +152,7 @@ const Classrooms = () => {
           <span className="ml-3">جاري تحميل الكلاسات...</span>
         </div>
       ) : classrooms?.length === 0 ? (
-        <p className="text-gray-400 text-center py-10">
-          لا توجد كلاسات حتى الآن
-        </p>
+        <p className="text-gray-400 text-center py-10">لا توجد كلاسات حتى الآن</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classrooms.map((classroom) => (

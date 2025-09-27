@@ -1,92 +1,61 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReportCard from "../Components/ReportCard";
-import {
-  FaUsers,
-  FaUserCheck,
-  FaUserSlash,
-  FaDollarSign,
-  FaChalkboardTeacher,
-  FaClipboardList,
-  FaFileAlt,
-  FaVideo,
-  FaTasks,
-} from "react-icons/fa";
+import * as FaIcons from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast";
+import { API_URL } from "../utils/api";
 
 const Reports = () => {
-  const reports = [
-    {
-      title: "إجمالي الطلاب",
-      description: "عدد الطلاب المسجلين.",
-      icon: FaUsers,
-      value: 245,
-    },
-    {
-      title: "الطلاب النشطون",
-      description: "عدد الطلاب المتفاعلين.",
-      icon: FaUserCheck,
-      value: 180,
-    },
-    {
-      title: "الطلاب غير النشطين",
-      description: "عدد الطلاب غير المتفاعلين.",
-      icon: FaUserSlash,
-      value: 65,
-    },
-    {
-      title: "إجمالي الأرباح",
-      description: "الأرباح المحققة حتى الآن.",
-      icon: FaDollarSign,
-      value: "$12,340",
-    },
-    {
-      title: "الكلاسات النشطة",
-      description: "عدد الكلاسات الحالية.",
-      icon: FaChalkboardTeacher,
-      value: 18,
-    },
-    {
-      title: "الخطط التعليمية",
-      description: "عدد الخطط المتاحة.",
-      icon: FaClipboardList,
-      value: 6,
-    },
-    {
-      title: "عدد الملفات",
-      description: "إجمالي الملفات المرفوعة.",
-      icon: FaFileAlt,
-      value: 42,
-    },
-    {
-      title: "عدد الفيديوهات",
-      description: "إجمالي الفيديوهات التعليمية.",
-      icon: FaVideo,
-      value: 25,
-    },
-    {
-      title: "عدد الأمتحانات",
-      description: "إجمالي المهام المضافة.",
-      icon: FaTasks,
-      value: 12,
-    },
-  ];
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_URL}/admin/reportes`);
+        if (!res.ok) throw new Error("فشل تحميل البيانات");
+        const data = await res.json();
+
+        const mappedReports = data.reports.map((report) => ({
+          ...report,
+          icon: FaIcons[report.icon] || FaIcons.FaClipboardList,
+        }));
+
+        setReports(mappedReports);
+      } catch (err) {
+        console.error("Failed to fetch reports:", err);
+        toast.error(err.message || "حدث خطأ أثناء تحميل التقارير");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6  mr-10 md:mr-0 ">التقارير</h2>
+      <Toaster position="top-right" />
+      <h2 className="text-2xl font-bold mb-6 mr-10 md:mr-0">التقارير</h2>
 
-      {/* شبكة التقارير */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reports.map((report, index) => (
-          <ReportCard
-            key={index}
-            title={report.title}
-            description={report.description}
-            icon={report.icon}
-            value={report.value}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <FaIcons.FaSpinner className="animate-spin text-4xl text-[#1998e1]" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reports.map((report, index) => (
+            <ReportCard
+              key={index}
+              title={report.title}
+              description={report.description}
+              icon={report.icon}
+              value={report.value}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
