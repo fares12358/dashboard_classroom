@@ -21,16 +21,16 @@ export default function StudentCard({ classID, student }) {
   const [kicking, setKicking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [closing, setClosing] = useState(false);
-  
+
   const handleKick = async () => {
     setKicking(true);
     try {
       const token = localStorage.getItem("adminToken");
       const res = await axios.post(
         `${API_URL}/admin/classe/${classID}/student/${student._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      }
       );
       if (res.data.success) {
         const currentStudents = getClassData(classID)?.students || [];
