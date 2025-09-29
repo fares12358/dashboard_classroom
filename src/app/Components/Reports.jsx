@@ -9,11 +9,15 @@ import { useAppContext } from "../Context/AppContext";
 const Reports = () => {
   const { reports, setReports } = useAppContext();
   const [loading, setLoading] = useState(true);
-
+  const token = localStorage.getItem("adminToken");
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/admin/reportes`);
+      const res = await fetch(`${API_URL}/admin/reportes`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!res.ok) throw new Error("فشل تحميل البيانات");
       const data = await res.json();
 

@@ -21,12 +21,16 @@ export default function StudentCard({ classID, student }) {
   const [kicking, setKicking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [closing, setClosing] = useState(false);
-
+  
   const handleKick = async () => {
     setKicking(true);
     try {
+      const token = localStorage.getItem("adminToken");
       const res = await axios.post(
-        `${API_URL}/admin/classe/${classID}/student/${student._id}`
+        `${API_URL}/admin/classe/${classID}/student/${student._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       if (res.data.success) {
         const currentStudents = getClassData(classID)?.students || [];
@@ -82,9 +86,8 @@ export default function StudentCard({ classID, student }) {
         </span>
 
         <span
-          className={`text-sm font-medium flex items-center gap-2 ${
-            student.status === "active" ? "text-green-400" : "text-yellow-400"
-          }`}
+          className={`text-sm font-medium flex items-center gap-2 ${student.status === "active" ? "text-green-400" : "text-yellow-400"
+            }`}
         >
           {student.status === "active" ? (
             <>
@@ -120,14 +123,12 @@ export default function StudentCard({ classID, student }) {
       {/* Delete Confirmation Modal */}
       {showConfirm && (
         <div
-          className={`fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 transition-opacity duration-300 ${
-            closing ? "opacity-0" : "opacity-100"
-          }`}
+          className={`fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 transition-opacity duration-300 ${closing ? "opacity-0" : "opacity-100"
+            }`}
         >
           <div
-            className={`bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700 transform transition-all duration-300 ${
-              closing ? "scale-90 opacity-0" : "scale-100 opacity-100"
-            }`}
+            className={`bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700 transform transition-all duration-300 ${closing ? "scale-90 opacity-0" : "scale-100 opacity-100"
+              }`}
           >
             <div className="flex flex-col items-center gap-3 text-center">
               <FaExclamationTriangle className="text-red-500 text-4xl" />
