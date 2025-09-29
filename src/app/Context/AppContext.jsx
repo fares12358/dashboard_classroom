@@ -19,9 +19,9 @@ export const AppProvider = ({ children }) => {
   const [transactions, setTransactions] = useState(null);
   const [pendingUsers, setpendingUsers] = useState(null);
   const [reports, setReports] = useState(null);
-  const [homeReport,setHomeReport] = useState(null);
+  const [homeReport, setHomeReport] = useState(null);
 
- 
+
 
   // class
   const [classesData, setClassesData] = useState([]);
@@ -61,25 +61,21 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider
       value={{
-        sidebarOpen,
-        setSidebarOpen,
-        user,
-        setUser,
+        sidebarOpen, setSidebarOpen,
+        user, setUser,
         isLogin, setIsLogin,
-        classrooms,
-        setClassrooms,
-        activePage, setActivePage
-        , activeTab, setActiveTab,
+        classrooms, setClassrooms,
+        activePage, setActivePage,
+        activeTab, setActiveTab,
         TapssidebarOpen, setTapsSidebarOpen,
         students, setStudents,
         plans, setPlans,
         transactions, setTransactions,
         pendingUsers, setpendingUsers,
-       //class
-        setClassesData,
-        classesData, openClass, setClassTabData, getClassData,
+        setClassesData, classesData,
+        openClass, setClassTabData, getClassData,
         reports, setReports,
-        homeReport,setHomeReport
+        homeReport, setHomeReport
       }}
     >
       {children}

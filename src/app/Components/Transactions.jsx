@@ -2,18 +2,21 @@
 import React, { useEffect, useState } from "react";
 import { FaUser, FaDollarSign, FaCalendarAlt, FaLink, FaSpinner, FaSync } from "react-icons/fa";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { API_URL } from "../utils/api.js";
 import { useAppContext } from "../Context/AppContext.jsx";
 
 export default function Transactions() {
   const { transactions, setTransactions } = useAppContext();
   const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("adminToken");
 
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/admin/transactions`);
+      const res = await axios.get(`${API_URL}/admin/transactions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.data.success) {
         setTransactions(res.data.data);
       } else {
@@ -36,6 +39,7 @@ export default function Transactions() {
 
   return (
     <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 flex flex-col gap-6">
+      <Toaster position="top-center" />
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-[#1998e1] mr-10 md:mr-0">💳 التحويلات</h2>
 

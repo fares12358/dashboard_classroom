@@ -9,6 +9,7 @@ import {
   FaClock,
   FaSync,
   FaTimes,
+  FaSpinner,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import axios from "axios";
@@ -27,6 +28,7 @@ export default function HomeTab({ classID }) {
   const [status, setStatus] = useState("pending");
   const [description, setDescription] = useState("");
 
+  const token = localStorage.getItem("adminToken");
   // 🔹 Ensure class slot exists in context
   useEffect(() => {
     openClass(classID);
@@ -47,7 +49,11 @@ export default function HomeTab({ classID }) {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/classe/${classID}`);
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setClassTabData(classID, "home", res.data);
       setClassName(res.data.name);
       setStatus(res.data.status);
@@ -72,7 +78,10 @@ export default function HomeTab({ classID }) {
         name: className,
         description,
         status,
-      });
+      },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       toast.success("تم تعديل بيانات الكلاس بنجاح ✅");
       setIsEditing(false);
       await fetchClass(true); // force reload
@@ -101,7 +110,7 @@ export default function HomeTab({ classID }) {
     setLoading(true);
     try {
       const yt_token = await getFreshToken();
-      await axios.delete(`http://localhost:5000/api/admin/classe/${classID}`,
+      await axios.delete(`${API_URL}/admin/classe/${classID}`,
         {
           headers: { Authorization: `Bearer ${yt_token}` },
         }
@@ -121,8 +130,8 @@ export default function HomeTab({ classID }) {
     <div className="relative">
       {/* ✅ Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-50 rounded-2xl">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#1998e1] border-t-transparent"></div>
+        <div className="absolute inset-0 flex items-center text-[#1998e1] justify-center bg-black/70 z-50 rounded-2xl">
+          <FaSpinner className="animate-spin text-3xl" />
         </div>
       )}
 

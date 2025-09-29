@@ -20,14 +20,19 @@ export default function StudentCard({ classID, student }) {
   const { getClassData, setClassTabData } = useAppContext();
   const [kicking, setKicking] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const handleKick = async () => {
     setKicking(true);
     try {
-      const res = await axios.post(`http://localhost:5000/api/admin/classe/${classID}/student/${student._id}`);
+      const res = await axios.post(
+        `${API_URL}/admin/classe/${classID}/student/${student._id}`
+      );
       if (res.data.success) {
         const currentStudents = getClassData(classID)?.students || [];
-        const updatedStudents = currentStudents.filter((s) => s._id !== student._id);
+        const updatedStudents = currentStudents.filter(
+          (s) => s._id !== student._id
+        );
         setClassTabData(classID, "students", updatedStudents);
         toast.success("✅ تم طرد الطالب بنجاح");
       } else {
@@ -38,8 +43,21 @@ export default function StudentCard({ classID, student }) {
       toast.error("حدث خطأ أثناء طرد الطالب ❌");
     } finally {
       setKicking(false);
-      setShowConfirm(false);
+      // تشغيل أنيميشن الخروج قبل الإخفاء
+      setClosing(true);
+      setTimeout(() => {
+        setShowConfirm(false);
+        setClosing(false);
+      }, 300);
     }
+  };
+
+  const handleCancel = () => {
+    setClosing(true);
+    setTimeout(() => {
+      setShowConfirm(false);
+      setClosing(false);
+    }, 300);
   };
 
   return (
@@ -64,8 +82,9 @@ export default function StudentCard({ classID, student }) {
         </span>
 
         <span
-          className={`text-sm font-medium flex items-center gap-2 ${student.status === "active" ? "text-green-400" : "text-yellow-400"
-            }`}
+          className={`text-sm font-medium flex items-center gap-2 ${
+            student.status === "active" ? "text-green-400" : "text-yellow-400"
+          }`}
         >
           {student.status === "active" ? (
             <>
@@ -100,16 +119,32 @@ export default function StudentCard({ classID, student }) {
 
       {/* Delete Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-          <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
+        <div
+          className={`fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 transition-opacity duration-300 ${
+            closing ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div
+            className={`bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700 transform transition-all duration-300 ${
+              closing ? "scale-90 opacity-0" : "scale-100 opacity-100"
+            }`}
+          >
             <div className="flex flex-col items-center gap-3 text-center">
               <FaExclamationTriangle className="text-red-500 text-4xl" />
               <h3 className="text-xl font-bold text-white">هل أنت متأكد؟</h3>
               <div className="flex gap-4 mt-4">
-                <button disabled={kicking} onClick={handleKick} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
+                <button
+                  disabled={kicking}
+                  onClick={handleKick}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
                   <FaUserSlash /> {kicking ? "جاري الطرد..." : "نعم"}
                 </button>
-                <button disabled={kicking} onClick={() => setShowConfirm(false)} className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
+                <button
+                  disabled={kicking}
+                  onClick={handleCancel}
+                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
                   <FaTimes /> إلغاء
                 </button>
               </div>

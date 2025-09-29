@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import ClassroomCard from "../Components/ClassroomCard";
 import { useAppContext } from "../Context/AppContext";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast,{Toaster} from "react-hot-toast";
 import { FaPlus, FaSpinner, FaTimes, FaSyncAlt } from "react-icons/fa";
 import { API_URL } from "../utils/api";
 
@@ -31,10 +31,10 @@ const Classrooms = () => {
       console.log(res.data);
       
       setClassrooms(res.data);
-      toast.success("تم تحديث الكلاسات ✅");
+      toast.success("تم تحديث الكلاسات ");
     } catch (error) {
       console.error("Error fetching classes:", error);
-      toast.error("فشل في تحميل الكلاسات ❌");
+      toast.error("فشل في تحميل الكلاسات ");
     } finally {
       setPageLoading(false);
     }
@@ -67,7 +67,7 @@ const Classrooms = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success("تم إضافة الكلاس بنجاح ✅");
+      toast.success("تم إضافة الكلاس بنجاح ");
       setForm({ name: "", description: "" });
       setIsAdding(false);
 
@@ -75,7 +75,7 @@ const Classrooms = () => {
       await fetchClasses();
     } catch (err) {
       console.error(err);
-      toast.error("فشل في إضافة الكلاس ❌");
+      toast.error("فشل في إضافة الكلاس ");
     } finally {
       setLoading(false);
     }
@@ -83,6 +83,7 @@ const Classrooms = () => {
 
   return (
     <div>
+      <Toaster center/>
       {/* العنوان + زر التحديث */}
       <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
         <h2 className="text-2xl font-bold text-[#1998e1]">الكلاسات</h2>
@@ -146,7 +147,7 @@ const Classrooms = () => {
       )}
 
       {/* شبكة الكروت */}
-      {pageLoading && (!classrooms || classrooms.length === 0) ? (
+      {pageLoading && (!classrooms || classrooms?.length === 0) ? (
         <div className="flex justify-center items-center py-10 text-[#1998e1]">
           <FaSpinner className="animate-spin text-3xl" />
           <span className="ml-3">جاري تحميل الكلاسات...</span>
@@ -155,7 +156,7 @@ const Classrooms = () => {
         <p className="text-gray-400 text-center py-10">لا توجد كلاسات حتى الآن</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {classrooms.map((classroom) => (
+          {classrooms?.map((classroom) => (
             <ClassroomCard key={classroom.id} {...classroom} />
           ))}
         </div>

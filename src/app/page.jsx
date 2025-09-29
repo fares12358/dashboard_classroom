@@ -53,7 +53,10 @@ export default function Home() {
     setPlans,
     setTransactions,
     setActiveTab,
-    setpendingUsers
+    setpendingUsers,
+    setReports,
+    setHomeReport,
+    setClassesData
   } = useAppContext();
   const router = useRouter();
 
@@ -72,6 +75,9 @@ export default function Home() {
     setActivePage('home');
     setActiveTab('home');
     localStorage.removeItem("adminToken");
+    setReports(null);
+    setHomeReport(null);
+    setClassesData([]);
     setLoading(false);
     router.push("/Pages/Auth/login");
   };
@@ -160,6 +166,7 @@ export default function Home() {
       checkAdminToken();
     }
   }, [isLogin, user, setIsLogin, setUser, router]);
+
 
   return (
     <div className="h-screen flex bg-[#090909] text-white" dir="rtl">

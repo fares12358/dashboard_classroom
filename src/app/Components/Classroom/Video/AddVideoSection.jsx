@@ -42,12 +42,16 @@ export default function AddVideoSection({ classID, onAdd }) {
 
   const saveVideoMetadata = async (classID, video) => {
     try {
+      const token = localStorage.getItem("adminToken");
       const response = await axios.post(
         `${API_URL}/admin/classe/${classID}/video`,
         {
           videoId: video.videoId,
           name: video.name,
           description: video.description,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       return response.data;

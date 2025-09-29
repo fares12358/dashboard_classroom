@@ -33,7 +33,7 @@ export default function PendingUsers() {
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState({});
   const [sending, setSending] = useState({}); // ⬅️ حالة إرسال الرابط لكل مستخدم
-
+  const token = localStorage.getItem("adminToken");
   // 🔹 Initialize countdowns
   const initTimers = (users) => {
     const timers = {};
@@ -49,7 +49,11 @@ export default function PendingUsers() {
   const fetchPendingUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/pendingUsers`);
+      const res = await axios.get(`${API_URL}/admin/pendingUsers`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.data.success) {
         setpendingUsers(res.data.data);
         initTimers(res.data.data);
@@ -67,7 +71,7 @@ export default function PendingUsers() {
 
   // 🔹 Initial load
   useEffect(() => {
-    if (!pendingUsers || pendingUsers.length === 0) {
+    if (pendingUsers === null) {
       fetchPendingUsers();
     } else {
       initTimers(pendingUsers);
@@ -107,11 +111,14 @@ export default function PendingUsers() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/admin/resend-payment-link`,
+        `${API_URL}/admin/resend-payment-link`,
         {
           email: user.email,
           url: user.checkoutUrl,
           time: remaining,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -140,7 +147,7 @@ export default function PendingUsers() {
         <button
           onClick={fetchPendingUsers}
           disabled={loading}
-          className="flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
+          className="flex cursor-pointer items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
         >
           {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
           <span className="hidden md:inline">تحديث</span>

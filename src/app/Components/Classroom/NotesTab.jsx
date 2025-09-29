@@ -10,7 +10,7 @@ import {
   FaSpinner,
   FaSyncAlt,
 } from "react-icons/fa";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { API_URL } from "@/app/utils/api";
@@ -23,9 +23,10 @@ export default function NotesTab({ classID }) {
   const [editText, setEditText] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // ✅ for popup confirm
   const bottomRef = useRef(null);
-
-  // Ensure class exists in context
+  const token = localStorage.getItem("adminToken");
   useEffect(() => {
     if (classID) openClass(classID);
   }, [classID]);
@@ -39,12 +40,15 @@ export default function NotesTab({ classID }) {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`);
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setClassTabData(classID, "notes", res.data.notes || []);
-      toast.success("✅ تم تحميل الملاحظات");
     } catch (err) {
       console.error(err);
-      toast.error("❌ فشل تحميل الملاحظات");
+      toast.error("فشل تحميل الملاحظات");
     } finally {
       setLoading(false);
     }
@@ -54,7 +58,6 @@ export default function NotesTab({ classID }) {
     fetchNotes();
   }, [classID]);
 
-  // Auto scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [notesClass]);
@@ -64,13 +67,17 @@ export default function NotesTab({ classID }) {
     if (!newNote.trim()) return toast.error("⚠️ لا يمكن إضافة ملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.post(`${API_URL}/admin/classe/${classID}/note`, { msg: newNote });
+      await axios.post(`${API_URL}/admin/classe/${classID}/note`, { msg: newNote },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setNewNote("");
       fetchNotes(true);
       toast.success("تمت إضافة الملاحظة ✍️");
     } catch (err) {
       console.error(err);
-      toast.error("❌ فشل إضافة الملاحظة");
+      toast.error("فشل إضافة الملاحظة");
     } finally {
       setActionLoading(false);
     }
@@ -78,16 +85,21 @@ export default function NotesTab({ classID }) {
 
   // Delete note
   const deleteNote = async (id) => {
-    setActionLoading(true);
+    setDeleteLoading(true);
     try {
-      await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`);
+      await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       fetchNotes(true);
-      toast.success("🗑️ تم حذف الملاحظة");
+      toast.success("تم حذف الملاحظة");
     } catch (err) {
       console.error(err);
-      toast.error("❌ فشل حذف الملاحظة");
+      toast.error("فشل حذف الملاحظة");
     } finally {
-      setActionLoading(false);
+      setDeleteLoading(false);
+      setConfirmDeleteId(null); // close modal
     }
   };
 
@@ -101,14 +113,18 @@ export default function NotesTab({ classID }) {
     if (!editText.trim()) return toast.error("⚠️ لا يمكن أن تكون الملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, { msg: editText });
+      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, { msg: editText },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setEditId(null);
       setEditText("");
       fetchNotes(true);
-      toast.success("✅ تم تعديل الملاحظة");
+      toast.success("تم تعديل الملاحظة");
     } catch (err) {
       console.error(err);
-      toast.error("❌ فشل تعديل الملاحظة");
+      toast.error("فشل تعديل الملاحظة");
     } finally {
       setActionLoading(false);
     }
@@ -121,7 +137,9 @@ export default function NotesTab({ classID }) {
 
   return (
     <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 flex flex-col h-[80vh]">
-      {/* Header + refresh */}
+      <Toaster position="top-center" reverseOrder={false} />
+
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
           <FaStickyNote /> الملاحظات
@@ -195,11 +213,10 @@ export default function NotesTab({ classID }) {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => deleteNote(note._id)}
-                          disabled={actionLoading}
-                          className="text-red-500 cursor-pointer disabled:opacity-50"
+                          onClick={() => setConfirmDeleteId(note._id)} // ✅ open modal
+                          className="text-red-500 cursor-pointer"
                         >
-                          {actionLoading ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                          <FaTrash />
                         </button>
                       </div>
                     </>
@@ -229,6 +246,51 @@ export default function NotesTab({ classID }) {
           {actionLoading ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />}
         </button>
       </div>
+
+      {/* Custom Confirm Modal */}
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-[#1a1a1a] rounded-xl p-6 w-[90%] max-w-md shadow-lg"
+            >
+              <h3 className="text-xl font-bold text-red-400 mb-4">
+                تأكيد الحذف
+              </h3>
+              <p className="text-gray-300 mb-6">
+                هل أنت متأكد أنك تريد حذف هذه الملاحظة؟
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={() => deleteNote(confirmDeleteId)}
+                  disabled={deleteLoading}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition cursor-pointer disabled:opacity-50"
+                >
+                  {deleteLoading ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : (
+                    "حذف"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

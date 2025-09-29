@@ -21,6 +21,7 @@ const Plans = () => {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [refreshing, setRefreshing] = useState(false); // ✅ state for refresh btn
+  const token = localStorage.getItem("adminToken");
 
   const [newPlan, setNewPlan] = useState({
     title: "",
@@ -34,7 +35,9 @@ const Plans = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/plans`);
+      const res = await axios.get(`${API_URL}/plans`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setPlans(res.data.plans || []);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -59,7 +62,9 @@ const Plans = () => {
         durationValue: Number(newPlan.durationValue),
       };
 
-      const res = await axios.post(`${API_URL}/plans/add`, payload);
+      const res = await axios.post(`${API_URL}/plans/add`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.data?.plan) throw new Error("الخادم لم يرجع البيانات المتوقعة");
       fetchPlans();
       setNewPlan({ title: "", description: "", price: "", durationValue: "", durationType: "" });
@@ -191,8 +196,8 @@ const Plans = () => {
           onClick={addPlan}
           disabled={adding}
           className={`${adding
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-green-600/20 hover:bg-green-600/30"
+            ? "bg-gray-600 cursor-not-allowed"
+            : "bg-green-600/20 hover:bg-green-600/30"
             } text-green-500 px-6 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer`}
         >
           {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />}{" "}

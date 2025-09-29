@@ -22,6 +22,7 @@ export default function PlanCard({ title, duration, price, description, id, onDe
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const token = localStorage.getItem("adminToken");
 
   const [planData, setPlanData] = useState({
     title,
@@ -46,7 +47,9 @@ export default function PlanCard({ title, duration, price, description, id, onDe
         durationType: planData.durationType,
         description: planData.description,
       };
-      const res = await axios.put(`${API_URL}/plans/${id}`, payload);
+      const res = await axios.put(`${API_URL}/plans/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("✅ تم تحديث الخطة بنجاح");
       setEditMode(false);
       if (onUpdated) onUpdated();
@@ -62,7 +65,9 @@ export default function PlanCard({ title, duration, price, description, id, onDe
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/plans/${id}`);
+      await axios.delete(`${API_URL}/plans/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("✅ تم حذف الخطة بنجاح");
       if (onDeleted) onDeleted(id);
       setConfirmDelete(false);

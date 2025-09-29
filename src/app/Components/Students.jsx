@@ -19,11 +19,14 @@ const Students = () => {
   const router = useRouter();
   const { students, setStudents } = useAppContext();
   const [loading, setLoading] = useState(false);
-
+  const token = localStorage.getItem("adminToken");
+  
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/students`);
+      const res = await axios.get(`${API_URL}/admin/students`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setStudents(res.data);
       toast.success("تم تحديث الطلاب");
     } catch (err) {
@@ -35,14 +38,13 @@ const Students = () => {
   };
 
   useEffect(() => {
-    if (students === null) {
-      fetchStudents();
-    }
-  }, [students]);
+    if (students) return;
+    fetchStudents();
+  }, []);
 
   return (
     <div>
-      <Toaster />
+      <Toaster position="top-center" />
       {/* Title + Refresh Button */}
       <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
         <h2 className="text-2xl font-bold">الطلاب</h2>

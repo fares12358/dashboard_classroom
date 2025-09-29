@@ -11,14 +11,17 @@ export default function VideosTab({ classID }) {
   const [videos, setVideos] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const token = localStorage.getItem("adminToken");
   // ✅ جلب الفيديوهات من الـ backend
   const fetchVideos = async () => {
     if (!classID) return;
     try {
       setLoading(true);
       const res = await axios.get(
-        `${API_URL}/admin/classe/${classID}/video`
+        `${API_URL}/admin/classe/${classID}/video`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       setVideos(res.data.videos || []);
     } catch (err) {

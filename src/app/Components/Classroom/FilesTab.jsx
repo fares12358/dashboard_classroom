@@ -29,7 +29,8 @@ export default function FilesTab({ classID }) {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
-
+  const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   // 🔹 Ensure class slot exists
   useEffect(() => {
     if (classID) openClass(classID);
@@ -38,6 +39,7 @@ export default function FilesTab({ classID }) {
   // 🔹 Get PDFs from context
   const pdfsClass = getClassData(classID)?.files;
 
+  const token = localStorage.getItem("adminToken");
   // ✅ Fetch PDFs
   const fetchFiles = async (force = false) => {
     if (!classID) return;
@@ -45,7 +47,9 @@ export default function FilesTab({ classID }) {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/classe/${classID}/Allfiles`);
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/Allfiles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setClassTabData(classID, "files", res.data.pdfs || []);
     } catch (err) {
       console.error("Error fetching files", err);
@@ -67,7 +71,7 @@ export default function FilesTab({ classID }) {
     try {
       setLoading(true);
       const res = await axios.post(`${API_URL}/admin/classe/${classID}/file`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` }
       });
 
       await fetchFiles(true);
@@ -86,14 +90,29 @@ export default function FilesTab({ classID }) {
   const confirmDeleteAction = async () => {
     if (!confirmDelete) return;
     try {
-      setLoading(true);
-      await axios.delete(`${API_URL}/admin/classe/${classID}/file/${confirmDelete}`);
+      setDeleting(true);
+      await axios.delete(`${API_URL}/admin/classe/${classID}/file/${confirmDelete}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       await fetchFiles(true);
+      // تشغيل أنيميشن الخروج
+      setClosing(true);
+      setTimeout(() => {
+        setConfirmDelete(null);
+        setClosing(false);
+      }, 300);
     } catch (err) {
       console.error("Error deleting file", err);
+      // في حالة خطأ بردو نقفل المودال مع الأنيميشن
+      setClosing(true);
+      setTimeout(() => {
+        setConfirmDelete(null);
+        setClosing(false);
+      }, 300);
     } finally {
-      setLoading(false);
-      setConfirmDelete(null);
+      setDeleting(false);
     }
   };
 
@@ -125,7 +144,7 @@ export default function FilesTab({ classID }) {
     try {
       setLoading(true);
       await axios.put(`${API_URL}/admin/classe/${classID}/file/${pdfId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
 
       await fetchFiles(true);
@@ -274,17 +293,49 @@ export default function FilesTab({ classID }) {
 
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-          <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
+        <div
+          className={`fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 transition-opacity duration-300 ${closing ? "opacity-0" : "opacity-100"
+            }`}
+        >
+          <div
+            className={`bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700 transform transition-all duration-300 ${closing ? "scale-90 opacity-0" : "scale-100 opacity-100"
+              }`}
+          >
             <div className="flex flex-col items-center gap-3 text-center">
               <FaExclamationTriangle className="text-red-500 text-4xl" />
-              <h3 className="text-xl font-bold text-white">هل أنت متأكد من حذف الملف؟</h3>
-              <p className="text-gray-400 text-sm">لا يمكن التراجع عن هذه العملية بعد الحذف.</p>
+              <h3 className="text-xl font-bold text-white">
+                هل أنت متأكد من حذف الملف؟
+              </h3>
+              <p className="text-gray-400 text-sm">
+                لا يمكن التراجع عن هذه العملية بعد الحذف.
+              </p>
               <div className="flex gap-4 mt-4">
-                <button onClick={confirmDeleteAction} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
-                  <FaTrash /> حذف
+                <button
+                  onClick={confirmDeleteAction}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> جاري الحذف...
+                    </>
+                  ) : (
+                    <>
+                      <FaTrash /> حذف
+                    </>
+                  )}
                 </button>
-                <button onClick={() => setConfirmDelete(null)} className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer">
+                <button
+                  disabled={deleting}
+                  onClick={() => {
+                    setClosing(true);
+                    setTimeout(() => {
+                      setConfirmDelete(null);
+                      setClosing(false);
+                    }, 300);
+                  }}
+                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
                   <FaTimes /> إلغاء
                 </button>
               </div>

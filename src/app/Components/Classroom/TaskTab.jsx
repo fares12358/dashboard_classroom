@@ -18,10 +18,10 @@ import {
 import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 
-export default function TaskTab({classID}) {
+export default function TaskTab({ classID }) {
   const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
-
+  const token = localStorage.getItem("adminToken");
   // Add task
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -35,6 +35,7 @@ export default function TaskTab({classID}) {
 
   // Delete confirm
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Ensure class slot exists in context
   useEffect(() => {
@@ -48,10 +49,11 @@ export default function TaskTab({classID}) {
   const fetchTasks = async (force = false) => {
     if (!classID) return;
     if (tasksClass && !force) return; // use cached
-
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/class/${classID}/tasks`);
+      const res = await axios.get(`${API_URL}/admin/class/${classID}/tasks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setClassTabData(classID, "tasks", res.data.tasks || []);
     } catch (err) {
       console.error("Error fetching tasks", err);
@@ -65,21 +67,17 @@ export default function TaskTab({classID}) {
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("يجب كتابة عنوان المهمة");
-
     const formData = new FormData();
     formData.append("name", name);
     formData.append("description", description);
     if (file) formData.append("task", file);
-
     try {
       setLoading(true);
       const res = await axios.post(`${API_URL}/admin/class/${classID}/task`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
-
       // Update context
       await fetchTasks(true);
-
       toast.success("تمت إضافة المهمة بنجاح");
       setName("");
       setDescription("");
@@ -91,7 +89,6 @@ export default function TaskTab({classID}) {
       setLoading(false);
     }
   };
-
   // ✅ Edit task
   const handleEdit = (task) => {
     setEditId(task._id);
@@ -99,32 +96,26 @@ export default function TaskTab({classID}) {
     setEditDescription(task.description);
     setEditFile(null);
   };
-
   const cancelEdit = () => {
     setEditId(null);
     setEditName("");
     setEditDescription("");
     setEditFile(null);
   };
-
   const saveEdit = async (e, taskId) => {
     e.preventDefault();
     if (!editName.trim()) return toast.error("يجب كتابة عنوان المهمة");
-
     const formData = new FormData();
     formData.append("name", editName);
     formData.append("description", editDescription);
     if (editFile) formData.append("task", editFile);
-
     try {
       setLoading(true);
       await axios.put(`${API_URL}/admin/class/${classID}/task/${taskId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
-
       toast.success("تم تحديث المهمة بنجاح");
       cancelEdit();
-
       // Update context by refetching tasks
       fetchTasks(true);
     } catch (err) {
@@ -134,28 +125,30 @@ export default function TaskTab({classID}) {
       setLoading(false);
     }
   };
-
   // ✅ Delete task
   const handleDeleteClick = (taskId) => setConfirmDelete(taskId);
-
   const confirmDeleteAction = async () => {
     if (!confirmDelete) return;
     try {
-      setLoading(true);
-      await axios.delete(`http://localhost:5000/api/admin/class/${classID}/task/${confirmDelete}`);
+      setDeleting(true); // ✅ بدأ الحذف
+      await axios.delete(`${API_URL}/admin/class/${classID}/task/${confirmDelete}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("تم حذف المهمة بنجاح");
       fetchTasks(true); // update context
+      setConfirmDelete(null); // ✅ نقفل المودال بعد الحذف
     } catch (err) {
       console.error("Error deleting task", err);
       toast.error("فشل حذف المهمة");
     } finally {
-      setLoading(false);
-      setConfirmDelete(null);
+      setDeleting(false); // ✅ خلص الحذف
     }
   };
 
-  const cancelDeleteAction = () => setConfirmDelete(null);
-
+  const cancelDeleteAction = () => {
+    if (deleting) return; // ماينفعش يقفل وهو بيحذف
+    setConfirmDelete(null);
+  };
   // Fetch tasks on mount if empty
   useEffect(() => {
     fetchTasks();
@@ -256,15 +249,35 @@ export default function TaskTab({classID}) {
 
       {/* Delete confirm modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 transition-opacity duration-300">
           <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
             <div className="flex flex-col items-center gap-3 text-center">
               <FaExclamationTriangle className="text-red-500 text-4xl" />
               <h3 className="text-xl font-bold text-white">هل أنت متأكد من حذف المهمة؟</h3>
               <p className="text-gray-400 text-sm">لا يمكن التراجع عن هذه العملية بعد الحذف.</p>
               <div className="flex gap-4 mt-4">
-                <button onClick={confirmDeleteAction} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"><FaTrash /> حذف</button>
-                <button onClick={cancelDeleteAction} className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"><FaTimes /> إلغاء</button>
+                <button
+                  onClick={confirmDeleteAction}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <>
+                      <FaSpinner className="animate-spin" /> جاري الحذف...
+                    </>
+                  ) : (
+                    <>
+                      <FaTrash /> حذف
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={cancelDeleteAction}
+                  disabled={deleting}
+                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
+                >
+                  <FaTimes /> إلغاء
+                </button>
               </div>
             </div>
           </div>

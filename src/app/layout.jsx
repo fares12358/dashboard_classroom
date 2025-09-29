@@ -1,7 +1,6 @@
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "./Context/AppContext";
-import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 
 const cairo = Cairo({
@@ -26,7 +25,6 @@ export default function RootLayout({ children }) {
             strategy="beforeInteractive"
           />
           {children}
-          <Toaster position="top-center" reverseOrder={false} />
         </AppProvider>
       </body>
     </html>

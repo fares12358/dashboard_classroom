@@ -19,7 +19,7 @@ import { useAppContext } from "@/app/Context/AppContext";
 const ReceivedTaskTab = ({ classID }) => {
   const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
-
+  const token = localStorage.getItem("adminToken");
   // Ensure class slot exists in context
   useEffect(() => {
     if (classID) openClass(classID);
@@ -31,20 +31,23 @@ const ReceivedTaskTab = ({ classID }) => {
   // ✅ Fetch received tasks
   const fetchTasks = async (force = false) => {
     if (!classID) return;
-    if (subtasksClass.length > 0 && !force) return; // don't refetch if already loaded
+    if (subtasksClass && !force) return; // don't refetch if already loaded
 
     try {
       setLoading(true);
       const res = await axios.get(
-        `${API_URL}/admin/class/${classID}/tasks/submissions`
+        `${API_URL}/admin/class/${classID}/tasks/submissions`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
 
       // ✅ Save entire response so we can access `tasks`
       setClassTabData(classID, "submissions", res.data);
-      toast.success("✅ تم تحميل المهام بنجاح");
+      toast.success("تم تحميل المهام بنجاح");
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "❌ فشل تحميل المهام");
+      toast.error(err.response?.data?.message || "فشل تحميل المهام");
     } finally {
       setLoading(false);
     }
@@ -78,7 +81,6 @@ const ReceivedTaskTab = ({ classID }) => {
       {loading && (
         <div className="flex items-center justify-center py-10 text-[#1998e1]">
           <FaSpinner className="animate-spin text-2xl mr-2" />
-          <span>جاري التحميل...</span>
         </div>
       )}
 
@@ -155,8 +157,8 @@ const ReceivedTaskTab = ({ classID }) => {
                       تاريخ التسليم:{" "}
                       {sub.solution?.submittedAt
                         ? new Date(
-                            sub.solution.submittedAt
-                          ).toLocaleString()
+                          sub.solution.submittedAt
+                        ).toLocaleString()
                         : "غير معروف"}
                     </p>
                   </div>

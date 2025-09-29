@@ -24,6 +24,7 @@ const Profile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [passwords, setPasswords] = useState({ newPassword: "" });
   const [editing, setEditing] = useState(false);
+  const token = localStorage.getItem("adminToken");
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
@@ -49,7 +50,9 @@ const Profile = () => {
       if (passwords.newPassword) {
         updateData.password = passwords.newPassword;
       }
-      const res = await axios.put(`${API_URL}/admin/auth/${user._id}`, updateData);
+      const res = await axios.put(`${API_URL}/admin/auth/${user._id}`, updateData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUser(res.data.admin);
       toast.success("تم تحديث البيانات بنجاح ✅");
       setEditing(false);
@@ -66,7 +69,9 @@ const Profile = () => {
     if (!user?._id) return;
     setRefreshing(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/auth/${user._id}`);
+      const res = await axios.get(`${API_URL}/admin/auth/${user._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUser(res.data.admin);
       toast.success("تم تحديث البيانات ✅");
     } catch (err) {
@@ -206,9 +211,8 @@ const Profile = () => {
               </select>
             ) : (
               <p
-                className={`${
-                  user.status === "active" ? "text-green-400" : "text-red-400"
-                }`}
+                className={`${user.status === "active" ? "text-green-400" : "text-red-400"
+                  }`}
               >
                 {user.status === "active" ? "نشط" : "غير نشط"}
               </p>

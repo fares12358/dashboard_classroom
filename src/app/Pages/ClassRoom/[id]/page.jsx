@@ -32,6 +32,8 @@ export default function ClassroomDetailPage() {
     TapssidebarOpen,
     setTapsSidebarOpen,
     openClass, // ✅ new from context
+    user,
+    isLogin
   } = useAppContext();
   const router = useRouter();
 
@@ -46,6 +48,13 @@ export default function ClassroomDetailPage() {
     setActivePage("classrooms");
     router.push("/");
   };
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token || !user || !isLogin) {
+      router.push("/Pages/Auth/login");
+    }
+  }, [])
+
 
   // 🔹 Function to render tab component
   const renderTabContent = () => {
@@ -96,11 +105,10 @@ export default function ClassroomDetailPage() {
 
         <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-60px)]">
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-              activeTab === "home"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "home"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("home")}
           >
             <FaHome className="text-[#1998e1]" />
@@ -108,11 +116,10 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-              activeTab === "students"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "students"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("students")}
           >
             <FaUsers className="text-[#1998e1]" />
@@ -120,11 +127,10 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-              activeTab === "videos"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "videos"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("videos")}
           >
             <FaVideo className="text-[#1998e1]" />
@@ -132,44 +138,40 @@ export default function ClassroomDetailPage() {
           </button>
 
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-              activeTab === "files"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === "files"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("files")}
           >
             <FaFilePdf className="text-[#1998e1]" />
             الملفات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
-              activeTab === "taskes"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "taskes"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("taskes")}
           >
             <FaFileAlt className="text-[#1998e1]" />
             الاختبارات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
-              activeTab === "received"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "received"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("received")}
           >
             <FaFileAlt className="text-[#1998e1]" />
             التسليمات
           </button>
           <button
-            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${
-              activeTab === "notes"
-                ? "bg-[#1998e1]/20 text-[#1998e1]"
-                : "text-gray-300"
-            }`}
+            className={`flex items-center gap-3 w-full text-right p-2 rounded-lg transition-all cursor-pointer duration-300 ${activeTab === "notes"
+              ? "bg-[#1998e1]/20 text-[#1998e1]"
+              : "text-gray-300"
+              }`}
             onClick={() => handleRouting("notes")}
           >
             <FaStickyNote className="text-[#1998e1]" />

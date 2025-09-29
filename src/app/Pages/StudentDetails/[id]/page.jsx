@@ -19,7 +19,7 @@ import { useAppContext } from "@/app/Context/AppContext";
 const StudentDetailsPage = () => {
   const { id } = useParams();
   const router = useRouter();
-  const { setActivePage, students } = useAppContext();
+  const { setActivePage, students, isLogin, user } = useAppContext();
 
   const [student, setStudent] = useState(null);
 
@@ -28,7 +28,7 @@ const StudentDetailsPage = () => {
       const found = students.find((s) => String(s.id) === String(id));
       setStudent(found || null);
       console.log(found);
-      
+
     } else {
       router.back();
     }
@@ -39,6 +39,14 @@ const StudentDetailsPage = () => {
     router.push("/");
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token || !user || !isLogin) {
+      router.push("/Pages/Auth/login");
+    }
+  }, [])
+
+
   if (!student) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-400">
@@ -46,6 +54,7 @@ const StudentDetailsPage = () => {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-[#090909] text-white py-8 px-4 md:px-8 space-y-6">
@@ -104,9 +113,8 @@ const StudentDetailsPage = () => {
           )}
           <span className="text-xs md:text-sm">الحالة:</span>
           <span
-            className={`font-bold text-xs md:text-sm ${
-              student.status === "active" ? "text-green-400" : "text-red-400"
-            }`}
+            className={`font-bold text-xs md:text-sm ${student.status === "active" ? "text-green-400" : "text-red-400"
+              }`}
           >
             {student.status === "active" ? "نشط" : "غير نشط"}
           </span>
@@ -161,11 +169,10 @@ const StudentDetailsPage = () => {
                   <span className="text-sm">
                     الحالة:{" "}
                     <span
-                      className={`font-bold ${
-                        tx.status === "succeeded"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
+                      className={`font-bold ${tx.status === "succeeded"
+                        ? "text-green-400"
+                        : "text-red-400"
+                        }`}
                     >
                       {tx.status === "succeeded" ? "ناجحة" : "فاشلة"}
                     </span>

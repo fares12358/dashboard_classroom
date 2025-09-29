@@ -7,11 +7,12 @@ import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
 import { FaSyncAlt } from "react-icons/fa";
 
+
 export default function StudentsTab({ classID }) {
   const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
+  const token = localStorage.getItem("adminToken");
   // 🔹 Ensure class slot exists in context
   useEffect(() => {
     if (classID) openClass(classID);
@@ -28,11 +29,13 @@ export default function StudentsTab({ classID }) {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/classe/${classID}/student`);
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/student`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.data.success) {
         setClassTabData(classID, "students", res.data.students);
         console.log(res.data.students);
-        
+
         toast.success("✅ تم جلب الطلاب بنجاح");
       } else {
         toast.error(res.data.message || "فشل في جلب الطلاب ❌");
