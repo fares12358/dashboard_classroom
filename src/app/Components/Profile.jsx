@@ -16,10 +16,11 @@ import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import { API_URL } from "../utils/api";
 import { useAppContext } from "../Context/AppContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Profile = () => {
-  const { user, setUser } = useAppContext(); // بيانات الأدمن من الكونتكست
-  const [loading, setLoading] = useState(!user); // لو مفيش بيانات نعمل لود
+  const { user, setUser } = useAppContext(); 
+  const [loading, setLoading] = useState(!user);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [passwords, setPasswords] = useState({ newPassword: "" });
@@ -50,6 +51,7 @@ const Profile = () => {
       if (passwords.newPassword) {
         updateData.password = passwords.newPassword;
       }
+
       const res = await axios.put(`${API_URL}/admin/auth/${user._id}`, updateData, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -100,16 +102,27 @@ const Profile = () => {
   }
 
   return (
-    <div className="px-0 sm:px-6 lg:px-8 w-full animate-fadeIn">
+    <motion.div
+      className="px-0 sm:px-6 lg:px-8 w-full"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Toaster position="top-center" reverseOrder={false} />
 
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-right">
+        <motion.h2
+          className="text-2xl sm:text-3xl font-bold text-center sm:text-right"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           الملف الشخصي
-        </h2>
+        </motion.h2>
 
         {/* زر تحديث البيانات */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={handleRefresh}
           disabled={refreshing}
           className="self-end flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg transition cursor-pointer disabled:opacity-50"
@@ -120,10 +133,15 @@ const Profile = () => {
             <FaSyncAlt />
           )}
           <span className="hidden md:inline">تحديث</span>
-        </button>
+        </motion.button>
       </div>
 
-      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 sm:p-8 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-8 transition-all duration-300">
+      <motion.div
+        className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 sm:p-8 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-8"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+      >
         {/* البيانات الشخصية */}
         <div>
           <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
@@ -131,22 +149,24 @@ const Profile = () => {
           </h3>
 
           {/* الاسم */}
-          <div className="flex flex-col gap-2 mb-4">
+          <motion.div layout className="flex flex-col gap-2 mb-4">
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               <FaUser /> الاسم
             </label>
             {editing ? (
-              <input
+              <motion.input
                 type="text"
                 name="name"
                 value={user.name || ""}
                 onChange={handleChange}
                 className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1 transition-all"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
               />
             ) : (
               <p className="text-white">{user.name}</p>
             )}
-          </div>
+          </motion.div>
 
           {/* البريد الإلكتروني */}
           <div className="flex flex-col gap-2 mb-4">
@@ -157,95 +177,114 @@ const Profile = () => {
           </div>
 
           {/* الهاتف */}
-          <div className="flex flex-col gap-2 mb-4">
+          <motion.div layout className="flex flex-col gap-2 mb-4">
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               <FaPhone /> الهاتف
             </label>
             {editing ? (
-              <input
+              <motion.input
                 type="text"
                 name="phone"
                 value={user.phone || ""}
                 onChange={handleChange}
                 className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
               />
             ) : (
               <p className="text-white">{user.phone}</p>
             )}
-          </div>
+          </motion.div>
 
           {/* الدور */}
-          <div className="flex flex-col gap-2 mb-4">
+          <motion.div layout className="flex flex-col gap-2 mb-4">
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               <FaIdBadge /> الدور
             </label>
             {editing ? (
-              <select
+              <motion.select
                 name="role"
                 value={user.role}
                 onChange={handleChange}
                 className="bg-[#222] text-white rounded px-2 py-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
               >
                 <option value="admin">مدير</option>
                 <option value="super-admin">سوبر مدير</option>
-              </select>
+              </motion.select>
             ) : (
               <p className="text-white">{user.role}</p>
             )}
-          </div>
+          </motion.div>
 
           {/* الحالة */}
-          <div className="flex flex-col gap-2">
+          <motion.div layout className="flex flex-col gap-2">
             <label className="text-sm text-[#1998e1] flex items-center gap-2">
               الحالة
             </label>
             {editing ? (
-              <select
+              <motion.select
                 name="status"
                 value={user.status}
                 onChange={handleChange}
                 className="bg-[#222] text-white rounded px-2 py-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
               >
                 <option value="active">نشط</option>
                 <option value="inactive">غير نشط</option>
-              </select>
+              </motion.select>
             ) : (
               <p
-                className={`${user.status === "active" ? "text-green-400" : "text-red-400"
-                  }`}
+                className={`${
+                  user.status === "active" ? "text-green-400" : "text-red-400"
+                }`}
               >
                 {user.status === "active" ? "نشط" : "غير نشط"}
               </p>
             )}
-          </div>
+          </motion.div>
         </div>
 
         {/* كلمة المرور */}
-        {editing && (
-          <div>
-            <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
-              الأمان
-            </h3>
-            <div className="flex flex-col gap-2 mb-4">
-              <label className="text-sm text-[#1998e1] flex items-center gap-2">
-                <FaLock /> كلمة المرور الجديدة
-              </label>
-              <input
-                type="password"
-                name="newPassword"
-                value={passwords.newPassword}
-                onChange={handlePasswordChange}
-                className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
-              />
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {editing && (
+            <motion.div
+              key="password-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h3 className="text-xl font-semibold text-white mb-4 border-b border-[#2a2a2a] pb-2">
+                الأمان
+              </h3>
+              <div className="flex flex-col gap-2 mb-4">
+                <label className="text-sm text-[#1998e1] flex items-center gap-2">
+                  <FaLock /> كلمة المرور الجديدة
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwords.newPassword}
+                  onChange={handlePasswordChange}
+                  className="bg-transparent border-b border-[#1998e1] text-white outline-none px-2 py-1"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* الأزرار */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#2a2a2a]">
+        <motion.div
+          layout
+          className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#2a2a2a]"
+        >
           {editing ? (
             <>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={handleSave}
                 disabled={saving}
                 className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition w-full sm:w-auto cursor-pointer disabled:opacity-50"
@@ -257,25 +296,27 @@ const Profile = () => {
                     <FaSave /> حفظ
                   </>
                 )}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setEditing(false)}
                 className="flex items-center justify-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition w-full sm:w-auto cursor-pointer"
               >
                 <FaUndo /> إلغاء
-              </button>
+              </motion.button>
             </>
           ) : (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setEditing(true)}
               className="flex items-center justify-center gap-2 bg-[#1998e1] text-white px-4 py-2 rounded-lg hover:bg-[#127bb5] transition w-full sm:w-auto cursor-pointer"
             >
               <FaEdit /> تعديل البيانات
-            </button>
+            </motion.button>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 

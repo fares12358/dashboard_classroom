@@ -6,12 +6,14 @@ import { FaSearch, FaVideo, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { API_URL } from "@/app/utils/api";
+import { motion, AnimatePresence } from "framer-motion"; // ✅ import animation tools
 
 export default function VideosTab({ classID }) {
   const [videos, setVideos] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("adminToken");
+
   // ✅ جلب الفيديوهات من الـ backend
   const fetchVideos = async () => {
     if (!classID) return;
@@ -42,15 +44,48 @@ export default function VideosTab({ classID }) {
     video.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ✅ Animation variants for stagger effect
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1, // delay between items
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    show: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, x: -30, scale: 0.9 },
+  };
+
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 30 }}
+      transition={{ duration: 0.4 }}
+      className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 space-y-6"
+    >
       {/* العنوان */}
-      <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
+      <motion.h2
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+        className="text-2xl font-bold text-[#1998e1] flex items-center gap-2"
+      >
         <FaVideo className="text-[#1998e1]" /> الفيديوهات
-      </h2>
+      </motion.h2>
 
       {/* شريط البحث */}
-      <div className="relative w-full md:w-1/2">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="relative w-full md:w-1/2"
+      >
         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         <input
           type="text"
@@ -59,31 +94,60 @@ export default function VideosTab({ classID }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2 rounded-lg bg-[#111] text-white outline-none border border-gray-700 focus:border-[#1998e1] transition"
         />
-      </div>
+      </motion.div>
 
       {/* إضافة الفيديو */}
-      <AddVideoSection classID={classID} onAdd={fetchVideos} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <AddVideoSection classID={classID} onAdd={fetchVideos} />
+      </motion.div>
 
       {/* عرض الفيديوهات */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
         {loading ? (
-          <p className="text-gray-400">⏳ جاري تحميل الفيديوهات...</p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-gray-400"
+          >
+            ⏳ جاري تحميل الفيديوهات...
+          </motion.p>
         ) : filteredVideos.length > 0 ? (
-          filteredVideos.map((video) => (
-            <VideoCard
-              key={video._id}
-              classID={classID}
-              onDelete={fetchVideos}
-              video={video}
-            />
-          ))
+          <AnimatePresence>
+            {filteredVideos.map((video) => (
+              <motion.div
+                key={video._id}
+                variants={itemVariants}
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.25 }}
+              >
+                <VideoCard
+                  classID={classID}
+                  onDelete={fetchVideos}
+                  video={video}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         ) : (
-          <p className="text-gray-400 flex items-center gap-2">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-gray-400 flex items-center gap-2"
+          >
             <FaExclamationTriangle className="text-yellow-500" /> لا يوجد نتائج
             فيديوهات.
-          </p>
+          </motion.p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

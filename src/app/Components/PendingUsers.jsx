@@ -28,12 +28,27 @@ const formatTimeLeft = (ms) => {
   return `${hours}س ${minutes}د ${seconds}ث`;
 };
 
+// 🔹 Animations
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 },
+  },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  exit: { opacity: 0, y: -15, transition: { duration: 0.3 } },
+};
+
 export default function PendingUsers() {
   const { pendingUsers, setpendingUsers } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState({});
-  const [sending, setSending] = useState({}); // ⬅️ حالة إرسال الرابط لكل مستخدم
+  const [sending, setSending] = useState({});
   const token = localStorage.getItem("adminToken");
+
   // 🔹 Initialize countdowns
   const initTimers = (users) => {
     const timers = {};
@@ -49,11 +64,9 @@ export default function PendingUsers() {
   const fetchPendingUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/pendingUsers`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get(`${API_URL}/admin/pendingUsers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.data.success) {
         setpendingUsers(res.data.data);
         initTimers(res.data.data);
@@ -164,7 +177,12 @@ export default function PendingUsers() {
           📌 لا يوجد مستخدمين معلقين حالياً.
         </p>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <AnimatePresence>
             {pendingUsers?.map((user) => {
               const msLeft = timeLeft[user.id] || 0;
@@ -173,26 +191,42 @@ export default function PendingUsers() {
               return (
                 <motion.div
                   key={user.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4 }}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  layout
                   className="bg-[#111] rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
                 >
                   {/* Header */}
-                  <div className="flex flex-col gap-2 border-b border-gray-700 pb-3">
-                    <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <motion.div
+                    className="flex flex-col gap-2 border-b border-gray-700 pb-3"
+                    variants={containerVariants}
+                  >
+                    <motion.h3
+                      className="text-xl font-semibold text-white flex items-center gap-2"
+                      variants={itemVariants}
+                    >
                       <FaUser className="text-[#1998e1]" />
                       {user.name}
-                    </h3>
-                    <p className="text-sm text-gray-300 flex items-center gap-2">
+                    </motion.h3>
+                    <motion.p
+                      className="text-sm text-gray-300 flex items-center gap-2"
+                      variants={itemVariants}
+                    >
                       <FaEnvelope className="text-[#1998e1]" /> {user.email}
-                    </p>
-                    <p className="text-sm text-gray-300 flex items-center gap-2">
+                    </motion.p>
+                    <motion.p
+                      className="text-sm text-gray-300 flex items-center gap-2"
+                      variants={itemVariants}
+                    >
                       <FaPhone className="text-[#1998e1]" /> {user.phone}
-                    </p>
+                    </motion.p>
 
-                    <div className="flex items-center gap-2 mt-2">
+                    <motion.div
+                      className="flex items-center gap-2 mt-2"
+                      variants={itemVariants}
+                    >
                       {remaining ? (
                         <span className="text-xs text-yellow-400 flex items-center gap-1">
                           <FaHourglass />
@@ -203,12 +237,15 @@ export default function PendingUsers() {
                           منتهية الصلاحية
                         </span>
                       )}
-                    </div>
-                  </div>
+                    </motion.div>
+                  </motion.div>
 
                   {/* Plan Section */}
                   {user.plan && (
-                    <div className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg">
+                    <motion.div
+                      className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg"
+                      variants={itemVariants}
+                    >
                       <h4 className="font-semibold text-[#1998e1] mb-2">
                         تفاصيل الخطة
                       </h4>
@@ -217,12 +254,15 @@ export default function PendingUsers() {
                         {user.plan.title} - ${user.plan.price} /{" "}
                         {user.plan.durationValue} {user.plan.durationType}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Transaction Section */}
                   {user.transaction && (
-                    <div className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg">
+                    <motion.div
+                      className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg"
+                      variants={itemVariants}
+                    >
                       <h4 className="font-semibold text-[#1998e1] mb-2">
                         تفاصيل المعاملة
                       </h4>
@@ -250,40 +290,44 @@ export default function PendingUsers() {
                           رابط الدفع
                         </a>
                       )}
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Checkout URL */}
                   {user.checkoutUrl && (
-                    <a
+                    <motion.a
                       href={user.checkoutUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="block text-blue-400 hover:underline mt-3 text-sm text-center"
+                      variants={itemVariants}
                     >
                       <FaLink className="inline ml-1" />
                       رابط التفعيل
-                    </a>
+                    </motion.a>
                   )}
 
                   {/* Resend link button */}
-                  <button
+                  <motion.button
                     onClick={() => handleResendLink(user, remaining)}
                     disabled={sending[user.id]}
                     className="w-full cursor-pointer mt-3 bg-[#1998e1] hover:bg-[#157bb8] text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    variants={itemVariants}
                   >
                     {sending[user.id] ? (
                       <FaSpinner className="animate-spin" />
                     ) : (
                       <SiGmail className="text-xl" />
                     )}
-                    {sending[user.id] ? "جاري الإرسال..." : "إعادة إرسال الرابط"}
-                  </button>
+                    {sending[user.id]
+                      ? "جاري الإرسال..."
+                      : "إعادة إرسال الرابط"}
+                  </motion.button>
                 </motion.div>
               );
             })}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
     </div>
   );

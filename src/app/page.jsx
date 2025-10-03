@@ -109,26 +109,27 @@ export default function Home() {
   };
 
   // ✅ Fetch Classes
-  useEffect(() => {
-    const fetchClasses = async () => {
-      if (classrooms) return
-      setLoading(true); // ⏳ Start loader
-      setErrorClasses(null);
-      try {
-        const token = localStorage.getItem("adminToken");
-        const res = await axios.get(`${API_URL}/admin/classes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setClassrooms(res.data);
-      } catch (error) {
-        console.error("Error fetching classes:", error);
-        setErrorClasses("تعذر الاتصال بالخادم");
-        toast.error("فشل في تحميل الكلاسات");
-      } finally {
-        setLoading(false); // ✅ Stop loader
-      }
-    };
+  const fetchClasses = async () => {
+    if (classrooms) return
+    setLoading(true); // ⏳ Start loader
+    setErrorClasses(null);
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await axios.get(`${API_URL}/admin/classes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setClassrooms(res.data);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      setErrorClasses("تعذر الاتصال بالخادم");
+      toast.error("فشل في تحميل الكلاسات");
+    } finally {
+      setLoading(false); // ✅ Stop loader
+    }
+  };
 
+  useEffect(() => {
     fetchClasses();
   }, [setClassrooms]);
 
@@ -167,6 +168,13 @@ export default function Home() {
     }
   }, [isLogin, user, setIsLogin, setUser, router]);
 
+  if (!isLogin || !user) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#090909] text-white" dir='rtl'>
+        <h3>login to start</h3>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen flex bg-[#090909] text-white" dir="rtl">
