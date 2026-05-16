@@ -1,87 +1,59 @@
 "use client";
 import React, { useState } from "react";
-import { FaVideo, FaFileAlt, FaUpload } from "react-icons/fa";
+import { FaVideo, FaFileAlt, FaUpload, FaSpinner } from "react-icons/fa";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_URL } from "@/app/utils/api";
+import { motion } from "framer-motion";
 
 export default function AddVideoSection({ classID, onAdd }) {
-  const [videoData, setVideoData] = useState({
-    name: "",
-    description: "",
-    videoFile: null,
-  });
+  const [videoData, setVideoData] = useState({ name: "", description: "", videoFile: null });
   const [preview, setPreview] = useState(null);
   const [progress, setProgress] = useState(0);
-  const [authToken, setAuthToken] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleChange = (e) =>
-    setVideoData({ ...videoData, [e.target.name]: e.target.value });
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
+
+  const handleChange = (e) => setVideoData({ ...videoData, [e.target.name]: e.target.value });
 
   const handleVideoFile = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setVideoData({ ...videoData, videoFile: file });
-      setPreview(URL.createObjectURL(file));
-    }
+    const f = e.target.files[0];
+    if (f) { setVideoData({ ...videoData, videoFile: f }); setPreview(URL.createObjectURL(f)); }
   };
 
   const getFreshToken = () =>
     new Promise((resolve) => {
       const client = window.google.accounts.oauth2.initTokenClient({
-        client_id:
-          "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com",
+        client_id: "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com",
         scope: "https://www.googleapis.com/auth/youtube.upload",
-        callback: (tokenResponse) => {
-          setAuthToken(tokenResponse.access_token);
-          resolve(tokenResponse.access_token);
-        },
+        callback: (tr) => resolve(tr.access_token),
       });
       client.requestAccessToken({ prompt: "consent" });
     });
 
-  const saveVideoMetadata = async (classID, video) => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        `${API_URL}/admin/classe/${classID}/video`,
-        {
-          videoId: video.videoId,
-          name: video.name,
-          description: video.description,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return response.data;
-    } catch (err) {
-      console.error("Error saving video metadata:", err);
-      toast.error("⚠️ فشل حفظ بيانات الفيديو");
-      throw err;
-    }
+  const saveMetadata = async (videoId) => {
+    const token = getToken();
+    await axios.post(
+      `${API_URL}/admin/classe/${classID}/video`,
+      { videoId, name: videoData.name, description: videoData.description },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!videoData.videoFile) {
-      toast.error("⚠️ من فضلك اختر فيديو");
-      return;
-    }
-
+    if (!videoData.videoFile) { toast.error("من فضلك اختر فيديو"); return; }
+    setUploading(true);
     try {
-      const accessToken = authToken || (await getFreshToken());
-
+      const accessToken = await getFreshToken();
       const metadata = {
         snippet: {
-          title: videoData.name || "Untitled Video",
-          description: videoData.description || "No description",
-          tags: ["classroom"],
+          title: videoData.name || "Untitled",
+          description: videoData.description || "",
           categoryId: "22",
         },
         status: { privacyStatus: "unlisted" },
       };
-
       const startRes = await fetch(
         "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
         {
@@ -95,117 +67,76 @@ export default function AddVideoSection({ classID, onAdd }) {
           body: JSON.stringify(metadata),
         }
       );
-      if (!startRes.ok) throw new Error("❌ Failed to start upload session");
-
+      if (!startRes.ok) throw new Error("فشل بدء رفع الفيديو");
       const uploadUrl = startRes.headers.get("location");
 
       const uploadRes = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", uploadUrl, true);
         xhr.setRequestHeader("Content-Type", videoData.videoFile.type);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        };
-
-        xhr.onload = () =>
-          xhr.status >= 200 && xhr.status < 300
-            ? resolve(xhr.responseText)
-            : reject(xhr.responseText);
-
-        xhr.onerror = () => reject("❌ Upload failed due to network error");
+        xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100)); };
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.responseText) : reject(xhr.responseText);
+        xhr.onerror = () => reject("فشل الرفع");
         xhr.send(videoData.videoFile);
       });
 
-      const videoDataRes = JSON.parse(uploadRes);
-      toast.success("🎉 تم رفع الفيديو بنجاح");
-
-      await saveVideoMetadata(classID, {
-        videoId: videoDataRes.id,
-        name: videoData.name,
-        description: videoData.description,
-      });
-
+      const parsed = JSON.parse(uploadRes);
+      await saveMetadata(parsed.id);
+      toast.success("تم رفع الفيديو بنجاح");
       if (onAdd) onAdd();
       setVideoData({ name: "", description: "", videoFile: null });
       setPreview(null);
       setProgress(0);
     } catch (err) {
-      console.error("Upload failed:", err);
-      toast.error(err.message || "⚠️ فشل رفع الفيديو");
+      toast.error(typeof err === "string" ? err : "فشل رفع الفيديو");
       setProgress(0);
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-[#111] rounded-xl shadow-md p-4 sm:p-6 mb-6 flex flex-col gap-5"
-    >
-      <h3 className="text-lg sm:text-xl font-bold text-[#1998e1] flex items-center gap-2">
-        <FaUpload /> إضافة فيديو جديد
-      </h3>
-
-      <div className="flex items-center gap-2">
-        <FaVideo className="text-[#1998e1]" />
-        <input
-          type="text"
-          name="name"
-          value={videoData.name}
-          onChange={handleChange}
-          placeholder="اسم الفيديو"
-          className="w-full p-2 rounded-lg bg-[#1a1a1a] text-white outline-none"
-        />
+    <form onSubmit={handleSubmit} className="card" style={{ padding: "1.25rem", marginBottom: "1.25rem" }}>
+      <div style={{ fontWeight: 700, color: "var(--blue)", marginBottom: "1rem", display: "flex", alignItems: "center", gap: 6 }}>
+        <FaUpload style={{ fontSize: "0.85rem" }} /> إضافة فيديو جديد
       </div>
 
-      <div className="flex items-center gap-2">
-        <FaFileAlt className="text-[#1998e1]" />
-        <input
-          type="text"
-          name="description"
-          value={videoData.description}
-          onChange={handleChange}
-          placeholder="وصف الفيديو"
-          className="w-full p-2 rounded-lg bg-[#1a1a1a] text-white outline-none"
-        />
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", marginBottom: "0.85rem" }}>
+        <div style={{ position: "relative" }}>
+          <FaVideo style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+          <input className="input" style={{ paddingRight: "2.2rem" }} type="text" name="name" value={videoData.name} onChange={handleChange} placeholder="اسم الفيديو" />
+        </div>
+        <div style={{ position: "relative" }}>
+          <FaFileAlt style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+          <input className="input" style={{ paddingRight: "2.2rem" }} type="text" name="description" value={videoData.description} onChange={handleChange} placeholder="وصف الفيديو" />
+        </div>
+
+        <label className="drop-zone" style={{ aspectRatio: preview ? "16/9" : "auto", minHeight: preview ? "auto" : 100, overflow: "hidden" }}>
+          {preview ? (
+            <video src={preview} style={{ width: "100%", borderRadius: 8 }} controls />
+          ) : (
+            <>
+              <FaVideo style={{ fontSize: "1.75rem", color: "var(--blue)" }} />
+              <span>ارفع الفيديو هنا</span>
+            </>
+          )}
+          <input type="file" accept="video/*" onChange={handleVideoFile} hidden />
+        </label>
       </div>
 
-      <label className="max-w-full w-[400px] aspect-video border-2 border-dashed border-[#1998e1]/40 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#1998e1] transition">
-        {preview ? (
-          <video
-            src={preview}
-            className="w-full h-full object-cover rounded-lg"
-            controls
-          />
-        ) : (
-          <div className="flex flex-col items-center text-gray-400">
-            <FaVideo className="text-4xl text-[#1998e1] mb-2" />
-            <span>إرفع الفيديو هنا</span>
-          </div>
-        )}
-        <input type="file" accept="video/*" onChange={handleVideoFile} hidden />
-      </label>
-
+      {/* Progress bar */}
       {progress > 0 && (
-        <div className="w-full bg-gray-700 rounded-full h-3 relative overflow-hidden">
-          <div
-            className="bg-[#1998e1] h-3 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          ></div>
-          <span className="absolute inset-0 flex items-center justify-center text-xs text-white">
-            {progress}%
-          </span>
+        <div style={{ marginBottom: "0.75rem" }}>
+          <div className="progress-bar">
+            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <div style={{ textAlign: "center", fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 4 }}>{progress}%</div>
         </div>
       )}
 
-      <button
-        type="submit"
-        className="bg-[#1998e1] cursor-pointer hover:bg-[#127bbf] transition p-2 rounded-lg text-white font-medium"
-      >
-        رفع الفيديو
-      </button>
+      <motion.button type="submit" disabled={uploading} whileTap={{ scale: 0.95 }} className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+        {uploading ? <><FaSpinner className="animate-spin" /> جارٍ الرفع...</> : <><FaUpload /> رفع الفيديو</>}
+      </motion.button>
     </form>
   );
 }

@@ -1,49 +1,29 @@
 "use client";
 import React, { useState } from "react";
 import axios from "axios";
-import {
-  FaPlay,
-  FaCalendarAlt,
-  FaTrash,
-  FaTimes,
-  FaExclamationTriangle,
-} from "react-icons/fa";
+import { FaPlay, FaCalendarAlt, FaTrash, FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { API_URL } from "@/app/utils/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function VideoCard({ video, classID, onDelete }) {
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const getFreshToken = () =>
-    new Promise((resolve) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id:
-          "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com",
-        scope:
-          "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl",
-        callback: (tokenResponse) => resolve(tokenResponse.access_token),
-      });
-      client.requestAccessToken({ prompt: "consent" });
-    });
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
+  /* ── FIX: video delete uses admin JWT, not YouTube OAuth ── */
   const confirmDeleteAction = async () => {
     try {
       setLoading(true);
-      const yt_token = await getFreshToken();
-
-      await axios.delete(
-        `${API_URL}/admin/classe/${classID}/video/${video._id}`,
-        {
-          headers: { Authorization: `Bearer ${yt_token}` },
-        }
-      );
-
-      toast.success("✅ تم حذف الفيديو بنجاح");
+      const token = getToken();
+      await axios.delete(`${API_URL}/admin/classe/${classID}/video/${video._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("تم حذف الفيديو بنجاح");
       if (onDelete) onDelete();
-    } catch (err) {
-      console.error("Delete Error:", err);
-      toast.error("⚠️ فشل حذف الفيديو");
+    } catch {
+      toast.error("فشل حذف الفيديو");
     } finally {
       setLoading(false);
       setConfirmDelete(false);
@@ -52,68 +32,69 @@ export default function VideoCard({ video, classID, onDelete }) {
 
   return (
     <>
-      <div className="bg-[#111] rounded-xl shadow-md p-4 flex flex-col gap-3 hover:shadow-lg hover:bg-[#1a1a1a] transition">
-        <div className="relative w-full rounded-lg overflow-hidden">
+      <motion.div
+        className="card card-hover"
+        style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}
+        whileHover={{ y: -2 }}
+      >
+        {/* Embed */}
+        <div style={{ borderRadius: 10, overflow: "hidden", aspectRatio: "16/9" }}>
           <iframe
-            className="w-full h-48 rounded-lg"
+            style={{ width: "100%", height: "100%", border: "none" }}
             src={`https://www.youtube.com/embed/${video.videoId}?autoplay=0&rel=0&modestbranding=1&controls=1`}
             title={video.name}
-            frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
         </div>
 
-        <div className="flex flex-col">
-          <span className="text-white font-semibold flex items-center gap-2">
-            <FaPlay className="text-[#1998e1]" /> {video.name}
-          </span>
-          <p className="text-gray-400 text-sm">{video.description}</p>
-          <span className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-            <FaCalendarAlt className="text-[#1998e1]" />{" "}
+        {/* Info */}
+        <div>
+          <div style={{ fontWeight: 700, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <FaPlay style={{ color: "var(--blue)", fontSize: "0.75rem" }} />
+            {video.name}
+          </div>
+          {video.description && <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: 4 }}>{video.description}</p>}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-dim)", fontSize: "0.75rem" }}>
+            <FaCalendarAlt style={{ color: "var(--blue)", fontSize: "0.7rem" }} />
             {new Date(video.uploadedAt).toLocaleDateString("ar-EG")}
-          </span>
+          </div>
         </div>
 
         <button
           onClick={() => setConfirmDelete(true)}
           disabled={loading}
-          className="mt-3 cursor-pointer bg-red-600 hover:bg-red-700 transition p-2 rounded-lg text-white font-medium flex items-center justify-center gap-2"
+          className="btn btn-danger btn-sm"
+          style={{ width: "100%", justifyContent: "center" }}
         >
           <FaTrash /> {loading ? "جارٍ الحذف..." : "حذف الفيديو"}
         </button>
-      </div>
+      </motion.div>
 
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-          <div className="bg-[#1a1a1a] rounded-2xl p-6 shadow-lg w-[90%] max-w-md border border-gray-700">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <FaExclamationTriangle className="text-red-500 text-4xl" />
-              <h3 className="text-xl font-bold text-white">
-                هل أنت متأكد من حذف الفيديو؟
-              </h3>
-              <p className="text-gray-400 text-sm">
-                لا يمكن التراجع عن هذه العملية بعد الحذف.
-              </p>
-              <div className="flex gap-4 mt-4">
-                <button
-                  onClick={confirmDeleteAction}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                  disabled={loading}
-                >
-                  <FaTrash /> {loading ? "جارٍ الحذف..." : "حذف"}
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                >
-                  <FaTimes /> إلغاء
-                </button>
+      {/* Delete modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-box" initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }}>
+              <div style={{ textAlign: "center" }}>
+                <FaExclamationTriangle style={{ color: "var(--red)", fontSize: "2.5rem", marginBottom: "0.75rem" }} />
+                <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>هل أنت متأكد من حذف الفيديو؟</div>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
+                  سيتم حذف الفيديو من YouTube وقاعدة البيانات.
+                </div>
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                  <button onClick={confirmDeleteAction} disabled={loading} className="btn btn-danger">
+                    <FaTrash /> {loading ? "جارٍ الحذف..." : "حذف"}
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost">
+                    <FaTimes /> إلغاء
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

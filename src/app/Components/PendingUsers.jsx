@@ -1,45 +1,20 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import {
-  FaCalendarAlt,
-  FaMoneyBillWave,
-  FaLink,
-  FaHourglass,
-  FaUser,
-  FaEnvelope,
-  FaPhone,
-  FaSync,
-  FaSpinner,
+  FaCalendarAlt, FaMoneyBillWave, FaLink, FaHourglass,
+  FaUser, FaEnvelope, FaPhone, FaSync, FaSpinner, FaUserClock,
 } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "../Context/AppContext";
 import { API_URL } from "../utils/api";
 
-// 🔹 Helper: format time left
 const formatTimeLeft = (ms) => {
   if (ms <= 0) return null;
-  const totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${hours}س ${minutes}د ${seconds}ث`;
-};
-
-// 🔹 Animations
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15 },
-  },
-};
-const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-  exit: { opacity: 0, y: -15, transition: { duration: 0.3 } },
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 3600)}س ${Math.floor((s % 3600) / 60)}د ${s % 60}ث`;
 };
 
 export default function PendingUsers() {
@@ -47,288 +22,192 @@ export default function PendingUsers() {
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState({});
   const [sending, setSending] = useState({});
-  const token = localStorage.getItem("adminToken");
 
-  // 🔹 Initialize countdowns
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
+
   const initTimers = (users) => {
     const timers = {};
-    users.forEach((user) => {
-      if (user.expireAt) {
-        timers[user.id] = new Date(user.expireAt).getTime() - Date.now();
-      }
+    users.forEach(u => {
+      if (u.expireAt) timers[u.id] = new Date(u.expireAt).getTime() - Date.now();
     });
     setTimeLeft(timers);
   };
 
-  // 🔹 Fetch function
   const fetchPendingUsers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/pendingUsers`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.data.success) {
         setpendingUsers(res.data.data);
         initTimers(res.data.data);
-        toast.success("✅ تم جلب المستخدمين بنجاح");
-      } else {
-        toast.error(res.data.message || "فشل في جلب المستخدمين ❌");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("حدث خطأ أثناء جلب المستخدمين ❌");
+      } else toast.error(res.data.message || "فشل في جلب المستخدمين");
+    } catch {
+      toast.error("حدث خطأ أثناء جلب المستخدمين");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 🔹 Initial load
   useEffect(() => {
-    if (pendingUsers === null) {
-      fetchPendingUsers();
-    } else {
-      initTimers(pendingUsers);
-    }
+    if (pendingUsers === null) fetchPendingUsers();
+    else initTimers(pendingUsers || []);
   }, []);
 
-  // 🔹 Countdown updater
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         const updated = {};
-        Object.keys(prev).forEach((id) => {
-          const newTime = prev[id] - 1000;
-          if (newTime > 0) {
-            updated[id] = newTime;
-          } else {
-            setpendingUsers((users) =>
-              users.filter((user) => String(user.id) !== String(id))
-            );
-          }
+        Object.keys(prev).forEach(id => {
+          const t = prev[id] - 1000;
+          if (t > 0) updated[id] = t;
+          else setpendingUsers(u => (u || []).filter(x => String(x.id) !== String(id)));
         });
         return updated;
       });
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [setpendingUsers]);
+  }, []);
 
-  // 🔹 Send payment link
   const handleResendLink = async (user, remaining) => {
-    if (!user.email || !user.checkoutUrl || !remaining) {
-      toast.error("❌ لا يوجد بيانات كافية لإرسال الرابط");
-      return;
-    }
-
-    setSending((prev) => ({ ...prev, [user.id]: true }));
-
+    if (!user.email || !user.checkoutUrl || !remaining) { toast.error("بيانات غير كافية"); return; }
+    setSending(p => ({ ...p, [user.id]: true }));
     try {
       const res = await axios.post(
         `${API_URL}/admin/resend-payment-link`,
-        {
-          email: user.email,
-          url: user.checkoutUrl,
-          time: remaining,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { email: user.email, url: user.checkoutUrl, time: remaining },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-
-      if (res.data.success) {
-        toast.success("✅ تم إرسال رابط الدفع إلى البريد الإلكتروني");
-      } else {
-        toast.error(res.data.message || "فشل إرسال الرابط ❌");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("حدث خطأ أثناء إرسال الرابط ❌");
+      if (res.data.success) toast.success("تم إرسال رابط الدفع");
+      else toast.error(res.data.message || "فشل الإرسال");
+    } catch {
+      toast.error("حدث خطأ أثناء إرسال الرابط");
     } finally {
-      setSending((prev) => ({ ...prev, [user.id]: false }));
+      setSending(p => ({ ...p, [user.id]: false }));
     }
   };
 
   return (
-    <div className="p-6 bg-[#1a1a1a] rounded-2xl shadow-xl space-y-6">
-      <Toaster position="top-center" reverseOrder={false} />
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-[#1998e1]">
-          المستخدمون المعلقون
-        </h2>
-
-        {/* Refresh Button */}
-        <button
-          onClick={fetchPendingUsers}
-          disabled={loading}
-          className="flex cursor-pointer items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
-        >
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div>
+          <div className="section-title">الحسابات المعلقة</div>
+          <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: 2 }}>
+            {pendingUsers?.length ?? 0} مستخدم ينتظر الدفع
+          </div>
+        </div>
+        <motion.button whileTap={{ scale: 0.92 }} onClick={fetchPendingUsers} disabled={loading} className="btn btn-ghost btn-sm">
           {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
-          <span className="hidden md:inline">تحديث</span>
-        </button>
+          <span>تحديث</span>
+        </motion.button>
       </div>
 
-      {/* Full page loading */}
-      {loading && pendingUsers?.length === 0 ? (
-        <p className="text-gray-300 animate-pulse text-center">
-          ⏳ جاري التحميل...
-        </p>
-      ) : pendingUsers?.length === 0 ? (
-        <p className="text-gray-300 text-center">
-          📌 لا يوجد مستخدمين معلقين حالياً.
-        </p>
-      ) : (
-        <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <AnimatePresence>
-            {pendingUsers?.map((user) => {
-              const msLeft = timeLeft[user.id] || 0;
-              const remaining = formatTimeLeft(msLeft);
-
-              return (
-                <motion.div
-                  key={user.id}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  layout
-                  className="bg-[#111] rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
-                >
-                  {/* Header */}
-                  <motion.div
-                    className="flex flex-col gap-2 border-b border-gray-700 pb-3"
-                    variants={containerVariants}
-                  >
-                    <motion.h3
-                      className="text-xl font-semibold text-white flex items-center gap-2"
-                      variants={itemVariants}
-                    >
-                      <FaUser className="text-[#1998e1]" />
-                      {user.name}
-                    </motion.h3>
-                    <motion.p
-                      className="text-sm text-gray-300 flex items-center gap-2"
-                      variants={itemVariants}
-                    >
-                      <FaEnvelope className="text-[#1998e1]" /> {user.email}
-                    </motion.p>
-                    <motion.p
-                      className="text-sm text-gray-300 flex items-center gap-2"
-                      variants={itemVariants}
-                    >
-                      <FaPhone className="text-[#1998e1]" /> {user.phone}
-                    </motion.p>
-
-                    <motion.div
-                      className="flex items-center gap-2 mt-2"
-                      variants={itemVariants}
-                    >
-                      {remaining ? (
-                        <span className="text-xs text-yellow-400 flex items-center gap-1">
-                          <FaHourglass />
-                          ينتهي خلال: {remaining}
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-400">
-                          منتهية الصلاحية
-                        </span>
-                      )}
-                    </motion.div>
-                  </motion.div>
-
-                  {/* Plan Section */}
-                  {user.plan && (
-                    <motion.div
-                      className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg"
-                      variants={itemVariants}
-                    >
-                      <h4 className="font-semibold text-[#1998e1] mb-2">
-                        تفاصيل الخطة
-                      </h4>
-                      <p className="text-sm text-gray-300">
-                        <FaMoneyBillWave className="inline ml-2 text-[#1998e1]" />
-                        {user.plan.title} - ${user.plan.price} /{" "}
-                        {user.plan.durationValue} {user.plan.durationType}
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {/* Transaction Section */}
-                  {user.transaction && (
-                    <motion.div
-                      className="bg-[#1a1a1a] border border-gray-700 mt-3 p-3 rounded-lg"
-                      variants={itemVariants}
-                    >
-                      <h4 className="font-semibold text-[#1998e1] mb-2">
-                        تفاصيل المعاملة
-                      </h4>
-                      <p className="text-sm text-gray-300">
-                        💵 مبلغ: ${user.transaction.amount}{" "}
-                        {user.transaction.currency}
-                      </p>
-                      <p className="text-sm text-gray-300">
-                        📝 الحالة: {user.transaction.status}
-                      </p>
-                      <p className="text-sm text-gray-300 flex items-center gap-1">
-                        <FaCalendarAlt className="text-[#1998e1]" />
-                        {new Date(
-                          user.transaction.createdAt
-                        ).toLocaleString("ar-EG")}
-                      </p>
-                      {user.transaction.checkoutUrl && (
-                        <a
-                          href={user.transaction.checkoutUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-400 hover:underline text-sm mt-1 inline-block"
-                        >
-                          <FaLink className="inline ml-1" />
-                          رابط الدفع
-                        </a>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {/* Checkout URL */}
-                  {user.checkoutUrl && (
-                    <motion.a
-                      href={user.checkoutUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block text-blue-400 hover:underline mt-3 text-sm text-center"
-                      variants={itemVariants}
-                    >
-                      <FaLink className="inline ml-1" />
-                      رابط التفعيل
-                    </motion.a>
-                  )}
-
-                  {/* Resend link button */}
-                  <motion.button
-                    onClick={() => handleResendLink(user, remaining)}
-                    disabled={sending[user.id]}
-                    className="w-full cursor-pointer mt-3 bg-[#1998e1] hover:bg-[#157bb8] text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
-                    variants={itemVariants}
-                  >
-                    {sending[user.id] ? (
-                      <FaSpinner className="animate-spin" />
-                    ) : (
-                      <SiGmail className="text-xl" />
-                    )}
-                    {sending[user.id]
-                      ? "جاري الإرسال..."
-                      : "إعادة إرسال الرابط"}
-                  </motion.button>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </motion.div>
+      {/* Loading skeleton */}
+      {loading && !pendingUsers?.length && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: "1rem" }}>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="card" style={{ padding: "1.2rem", height: 200 }} />
+          ))}
+        </div>
       )}
+
+      {/* Empty */}
+      {!loading && pendingUsers?.length === 0 && (
+        <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "3rem 0" }}>
+          <FaUserClock style={{ fontSize: "2.5rem", color: "var(--text-dim)", marginBottom: "0.75rem" }} />
+          <div>لا يوجد مستخدمين معلقين حالياً</div>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: "1rem" }}>
+        <AnimatePresence>
+          {pendingUsers?.map((user) => {
+            const msLeft    = timeLeft[user.id] || 0;
+            const remaining = formatTimeLeft(msLeft);
+
+            return (
+              <motion.div
+                key={user.id}
+                className="card"
+                style={{ padding: "1.2rem" }}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+              >
+                {/* User info */}
+                <div style={{ marginBottom: "0.85rem", paddingBottom: "0.85rem", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.95rem", display: "flex", alignItems: "center", gap: 6 }}>
+                      <FaUser style={{ color: "var(--blue)", fontSize: "0.8rem" }} /> {user.name}
+                    </div>
+                    {remaining ? (
+                      <span className="badge badge-yellow">
+                        <FaHourglass style={{ fontSize: "0.65rem" }} /> {remaining}
+                      </span>
+                    ) : (
+                      <span className="badge badge-red">منتهية</span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <FaEnvelope style={{ color: "var(--blue)", fontSize: "0.7rem" }} /> {user.email}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <FaPhone style={{ color: "var(--blue)", fontSize: "0.7rem" }} /> {user.phone}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Plan */}
+                {user.plan && (
+                  <div style={{ background: "var(--bg-panel)", borderRadius: 10, padding: "0.65rem 0.85rem", marginBottom: "0.6rem", fontSize: "0.82rem" }}>
+                    <div style={{ color: "var(--blue)", fontWeight: 700, marginBottom: 3 }}>الخطة</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-muted)" }}>
+                      <FaMoneyBillWave style={{ color: "var(--blue)" }} />
+                      {user.plan.title} — ${user.plan.price} / {user.plan.durationValue} {user.plan.durationType}
+                    </div>
+                  </div>
+                )}
+
+                {/* Transaction */}
+                {user.transaction && (
+                  <div style={{ background: "var(--bg-panel)", borderRadius: 10, padding: "0.65rem 0.85rem", marginBottom: "0.6rem", fontSize: "0.82rem" }}>
+                    <div style={{ color: "var(--blue)", fontWeight: 700, marginBottom: 3 }}>المعاملة</div>
+                    <div style={{ color: "var(--text-muted)", display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span>المبلغ: <strong style={{ color: "var(--green)" }}>${user.transaction.amount} {user.transaction.currency?.toUpperCase()}</strong></span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <FaCalendarAlt style={{ color: "var(--blue)", fontSize: "0.7rem" }} />
+                        {new Date(user.transaction.createdAt).toLocaleDateString("ar-EG")}
+                      </span>
+                    </div>
+                    {user.transaction.checkoutUrl && (
+                      <a href={user.transaction.checkoutUrl} target="_blank" rel="noreferrer"
+                        className="btn btn-ghost btn-sm" style={{ marginTop: 6, fontSize: "0.78rem" }}>
+                        <FaLink /> رابط الدفع
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Resend */}
+                <button
+                  onClick={() => handleResendLink(user, remaining)}
+                  disabled={sending[user.id] || !remaining}
+                  className="btn btn-primary"
+                  style={{ width: "100%", justifyContent: "center", marginTop: 4 }}
+                >
+                  {sending[user.id] ? <FaSpinner className="animate-spin" /> : <SiGmail />}
+                  {sending[user.id] ? "جاري الإرسال..." : "إعادة إرسال الرابط"}
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

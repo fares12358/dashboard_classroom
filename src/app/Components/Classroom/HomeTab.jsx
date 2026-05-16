@@ -1,15 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  FaUsers,
-  FaCalendarAlt,
-  FaTrash,
-  FaEdit,
-  FaCheckCircle,
-  FaClock,
-  FaSync,
-  FaTimes,
-  FaSpinner,
+  FaUsers, FaCalendarAlt, FaTrash, FaEdit, FaCheckCircle,
+  FaClock, FaSync, FaTimes, FaSpinner, FaExclamationTriangle,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import axios from "axios";
@@ -23,17 +16,14 @@ export default function HomeTab({ classID }) {
   const { openClass, getClassData, setClassTabData } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
   const [className, setClassName] = useState("");
   const [status, setStatus] = useState("pending");
   const [description, setDescription] = useState("");
 
-  const token = localStorage.getItem("adminToken");
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
-  useEffect(() => {
-    openClass(classID);
-  }, [classID]);
+  useEffect(() => { openClass(classID); }, [classID]);
 
   const classData = getClassData(classID)?.home;
 
@@ -44,27 +34,23 @@ export default function HomeTab({ classID }) {
       setDescription(classData.description || "");
       return;
     }
-
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       setClassTabData(classID, "home", res.data);
-      setClassName(res.data.name);
-      setStatus(res.data.status);
-      setDescription(res.data.description);
-    } catch (err) {
-      console.error(err);
+      setClassName(res.data.name || "");
+      setStatus(res.data.status || "pending");
+      setDescription(res.data.description || "");
+    } catch {
       toast.error("فشل تحميل بيانات الكلاس");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchClass();
-  }, [classID]);
+  useEffect(() => { fetchClass(); }, [classID]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -72,43 +58,29 @@ export default function HomeTab({ classID }) {
       await axios.put(
         `${API_URL}/admin/classe/${classID}`,
         { name: className, description, status },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-      toast.success("تم تعديل بيانات الكلاس بنجاح ✅");
+      toast.success("تم تعديل بيانات الكلاس بنجاح");
       setIsEditing(false);
       await fetchClass(true);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("فشل تعديل الكلاس");
     } finally {
       setLoading(false);
     }
   };
 
-  const getFreshToken = () =>
-    new Promise((resolve) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id:
-          "481144476045-q2joha7klhtqh8n80a8ce87a8et826r2.apps.googleusercontent.com",
-        scope:
-          "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl",
-        callback: (tokenResponse) => resolve(tokenResponse.access_token),
-      });
-      client.requestAccessToken({ prompt: "consent" });
-    });
-
+  /* ── FIX: delete uses adminToken, NOT YouTube OAuth token ── */
   const onDelete = async () => {
     setLoading(true);
     try {
-      const yt_token = await getFreshToken();
       await axios.delete(`${API_URL}/admin/classe/${classID}`, {
-        headers: { Authorization: `Bearer ${yt_token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
-      toast.success("تم حذف الكلاس بنجاح 🗑️");
+      toast.success("تم حذف الكلاس بنجاح");
       setShowDeleteModal(false);
       router.push("/");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("فشل حذف الكلاس");
     } finally {
       setLoading(false);
@@ -116,232 +88,127 @@ export default function HomeTab({ classID }) {
   };
 
   return (
-    <div className="relative">
-      {/* ✅ Loading Overlay with animation */}
+    <div style={{ maxWidth: 700, position: "relative" }}>
+      {/* Loading overlay */}
       <AnimatePresence>
         {loading && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/70 z-50 rounded-2xl"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
           >
-            <FaSpinner className="animate-spin text-3xl text-[#1998e1]" />
+            <div className="spinner" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 relative"
-      >
-        {/* زر الحذف */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowDeleteModal(true)}
-          className="absolute top-4 left-4 text-red-500 hover:text-red-600 bg-red-600/20 p-3 rounded-full transition cursor-pointer"
-        >
-          <FaTrash className="text-md" />
-        </motion.button>
+      <div className="card" style={{ padding: "1.5rem", position: "relative" }}>
+        {/* Action buttons top-right */}
+        <div style={{ position: "absolute", top: "1rem", left: "1rem", display: "flex", gap: "0.5rem" }}>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => fetchClass(true)} className="btn btn-ghost btn-sm btn-icon" title="تحديث">
+            <FaSync style={{ fontSize: "0.8rem" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsEditing(true)} className="btn btn-ghost btn-sm btn-icon" title="تعديل">
+            <FaEdit style={{ fontSize: "0.8rem" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowDeleteModal(true)} className="btn btn-danger btn-sm btn-icon" title="حذف">
+            <FaTrash style={{ fontSize: "0.8rem" }} />
+          </motion.button>
+        </div>
 
-        {/* زر التعديل */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsEditing(true)}
-          className="absolute top-4 right-4 text-[#1998e1] hover:text-blue-400 bg-[#1998e1]/20 p-3 rounded-full transition cursor-pointer"
-        >
-          <FaEdit className="text-md" />
-        </motion.button>
-
-        {/* زر تحديث البيانات */}
-        <motion.button
-          whileTap={{ rotate: 90 }}
-          onClick={() => fetchClass(true)}
-          className="absolute top-4 right-16 text-green-500 hover:text-green-400 bg-green-600/20 p-3 rounded-full transition cursor-pointer"
-        >
-          <FaSync className={`text-md ${loading ? "animate-spin" : ""}`} />
-        </motion.button>
-
-        {/* المحتوى */}
+        {/* View / Edit content */}
         <AnimatePresence mode="wait">
           {isEditing ? (
             <motion.div
-              key="editForm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col gap-4 mb-6 mt-10"
+              key="edit"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              style={{ paddingTop: "2.5rem" }}
             >
-              {/* تعديل الاسم */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <label className="text-sm text-gray-400 block mb-2">
-                  اسم الكلاس
-                </label>
-                <input
-                  type="text"
-                  value={className}
-                  onChange={(e) => setClassName(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-[#111] border border-gray-700 text-white focus:border-[#1998e1] focus:ring-1 focus:ring-[#1998e1] outline-none"
-                />
-              </motion.div>
-
-              {/* تعديل الحالة */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <label className="text-sm text-gray-400 block mb-2">
-                  حالة الكلاس
-                </label>
-                <div className="relative">
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full p-3 pr-10 rounded-lg bg-[#111] border border-gray-700 text-white appearance-none focus:border-[#1998e1] focus:ring-1 focus:ring-[#1998e1] outline-none"
-                  >
-                    <option value="active">✅ نشط</option>
-                    <option value="pending">⏳ معلق</option>
-                  </select>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1998e1]">
-                    {status === "active" ? <FaCheckCircle /> : <FaClock />}
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* تعديل الوصف */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="text-sm text-gray-400 block mb-2">الوصف</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-[#111] border border-gray-700 text-white focus:border-[#1998e1] focus:ring-1 focus:ring-[#1998e1] outline-none"
-                />
-              </motion.div>
-
-              {/* أزرار */}
-              <div className="flex gap-3 mt-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={handleSave}
-                  className="flex-1 bg-green-600/20 text-green-500 p-3 rounded-lg hover:bg-green-600/30 transition cursor-pointer"
-                >
-                  حفظ
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 bg-gray-600/20 text-gray-300 p-3 rounded-lg hover:bg-gray-600/30 transition cursor-pointer"
-                >
-                  إلغاء
-                </motion.button>
+              <div style={{ marginBottom: "0.85rem" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: 5 }}>اسم الكلاس</label>
+                <input className="input" value={className} onChange={e => setClassName(e.target.value)} />
+              </div>
+              <div style={{ marginBottom: "0.85rem" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: 5 }}>الحالة</label>
+                <select className="input" value={status} onChange={e => setStatus(e.target.value)}>
+                  <option value="active">نشط</option>
+                  <option value="pending">معلق</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: 5 }}>الوصف</label>
+                <textarea className="input" style={{ minHeight: 80, resize: "vertical" }} value={description} onChange={e => setDescription(e.target.value)} />
+              </div>
+              <div style={{ display: "flex", gap: "0.6rem" }}>
+                <button onClick={handleSave} disabled={loading} className="btn btn-success">
+                  {loading ? <FaSpinner className="animate-spin" /> : null} حفظ
+                </button>
+                <button onClick={() => setIsEditing(false)} className="btn btn-ghost">
+                  <FaTimes /> إلغاء
+                </button>
               </div>
             </motion.div>
           ) : (
             <motion.div
-              key="viewData"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              key="view"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              style={{ paddingTop: "2rem" }}
             >
-              <h1 className="text-3xl font-bold text-[#1998e1] mb-2 mt-10">
-                {classData?.name}
-              </h1>
-              <p
-                className={`flex items-center gap-2 text-sm mb-6 ${
-                  classData?.status === "active"
-                    ? "text-green-400"
-                    : "text-yellow-400"
-                }`}
-              >
-                {classData?.status === "active" ? (
-                  <>
-                    <FaCheckCircle /> الكلاس نشط
-                  </>
-                ) : (
-                  <>
-                    <FaClock /> الكلاس معلق
-                  </>
-                )}
-              </p>
+              <div style={{ marginBottom: "0.5rem" }}>
+                <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)", marginBottom: "0.4rem" }}>
+                  {classData?.name || "—"}
+                </h1>
+                <span className={`badge ${classData?.status === "active" ? "badge-green" : "badge-yellow"}`}>
+                  {classData?.status === "active" ? <><FaCheckCircle style={{ fontSize: "0.65rem" }} /> نشط</> : <><FaClock style={{ fontSize: "0.65rem" }} /> معلق</>}
+                </span>
+              </div>
+
+              <hr className="divider" />
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "1.1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.88rem", color: "var(--text-muted)" }}>
+                  <FaUsers style={{ color: "var(--blue)" }} />
+                  <span>عدد الطلاب:</span>
+                  <strong style={{ color: "var(--text-main)" }}>{classData?.studentsCount ?? 0}</strong>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.88rem", color: "var(--text-muted)" }}>
+                  <FaCalendarAlt style={{ color: "var(--blue)" }} />
+                  <span>تاريخ الإنشاء:</span>
+                  <strong style={{ color: "var(--text-main)" }}>
+                    {classData?.createdAt ? new Date(classData.createdAt).toLocaleDateString("ar-EG") : "—"}
+                  </strong>
+                </div>
+              </div>
+
+              {classData?.description && (
+                <div style={{ background: "var(--bg-panel)", borderRadius: 10, padding: "0.85rem 1rem" }}>
+                  <div style={{ fontSize: "0.8rem", color: "var(--blue)", fontWeight: 600, marginBottom: 5 }}>الوصف</div>
+                  <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", lineHeight: 1.7 }}>{classData.description}</p>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
 
-        {/* باقي التفاصيل */}
-        <div className="space-y-4 text-gray-300">
-          <p className="flex items-center gap-2">
-            <FaUsers className="text-[#1998e1]" />
-            <span className="font-semibold text-white">عدد الطلاب:</span>{" "}
-            {classData?.studentsCount || 0}
-          </p>
-
-          <p className="flex items-center gap-2">
-            <FaCalendarAlt className="text-[#1998e1]" />
-            <span className="font-semibold text-white">تاريخ الإنشاء:</span>{" "}
-            {new Date(classData?.createdAt).toLocaleDateString("ar-EG")}
-          </p>
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold text-[#1998e1] mb-2">
-            وصف الكلاس
-          </h2>
-          <p className="text-gray-400">
-            {classData?.description || "لا يوجد وصف"}
-          </p>
-        </div>
-      </motion.div>
-
-      {/* ✅ Modal Animation */}
+      {/* Delete modal */}
       <AnimatePresence>
         {showDeleteModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-[#1a1a1a] p-6 rounded-2xl shadow-lg w-96 text-center"
-            >
-              <h2 className="text-xl text-white font-bold mb-4">
-                هل أنت متأكد من الحذف؟
-              </h2>
-              <p className="text-gray-400 mb-6">
-                سيتم حذف الكلاس بشكل نهائي ولا يمكن التراجع عن العملية.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onDelete}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                >
-                  <FaTrash /> حذف
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowDeleteModal(false)}
-                  className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
-                >
-                  <FaTimes /> إلغاء
-                </motion.button>
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-box" initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }} transition={{ duration: 0.25 }}>
+              <div style={{ textAlign: "center" }}>
+                <FaExclamationTriangle style={{ color: "var(--red)", fontSize: "2.5rem", marginBottom: "0.75rem" }} />
+                <div style={{ fontWeight: 700, fontSize: "1.05rem", marginBottom: "0.5rem" }}>هل أنت متأكد من الحذف؟</div>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
+                  سيتم حذف الكلاس وجميع محتوياته بشكل نهائي ولا يمكن التراجع.
+                </div>
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                  <button onClick={onDelete} disabled={loading} className="btn btn-danger">
+                    {loading ? <FaSpinner className="animate-spin" /> : <FaTrash />} حذف
+                  </button>
+                  <button onClick={() => setShowDeleteModal(false)} className="btn btn-ghost">
+                    <FaTimes /> إلغاء
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

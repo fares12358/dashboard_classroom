@@ -1,173 +1,164 @@
 "use client";
 import React, { useState } from "react";
 import {
-  FaCalendarAlt,
-  FaMoneyBillWave,
-  FaInfoCircle,
-  FaTrash,
-  FaEdit,
-  FaSave,
-  FaUndo,
-  FaSpinner,
-  FaExclamationTriangle,
+  FaCalendarAlt, FaMoneyBillWave, FaInfoCircle,
+  FaTrash, FaEdit, FaSave, FaUndo, FaSpinner, FaExclamationTriangle,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { API_URL } from "../utils/api.js";
+import { motion, AnimatePresence } from "framer-motion";
 
-
+const DURATION_OPTIONS = [
+  { value: "day", label: "يوم" },
+  { value: "week", label: "أسبوع" },
+  { value: "month", label: "شهر" },
+  { value: "year", label: "سنة" },
+];
 
 export default function PlanCard({ title, duration, price, description, id, onDeleted, onUpdated }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const token = localStorage.getItem("adminToken");
+
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
   const [planData, setPlanData] = useState({
     title,
     price,
-    durationValue: duration.split(" ")[0],
-    durationType: duration.split(" ")[1],
+    durationValue: duration?.split(" ")[0] ?? "",
+    durationType: duration?.split(" ")[1] ?? "month",
     description: description || "",
   });
 
-  // Update Plan
   const handleSave = async () => {
     if (!planData.title || !planData.price || !planData.durationValue || !planData.durationType) {
-      toast.error("⚠️ جميع الحقول مطلوبة");
-      return;
+      toast.error("جميع الحقول مطلوبة"); return;
     }
+    setSaving(true);
     try {
-      setSaving(true);
-      const payload = {
-        title: planData.title,
-        price: Number(planData.price),
-        durationValue: Number(planData.durationValue),
-        durationType: planData.durationType,
-        description: planData.description,
-      };
-      const res = await axios.put(`${API_URL}/plans/${id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("✅ تم تحديث الخطة بنجاح");
+      await axios.put(`${API_URL}/plans/${id}`,
+        { title: planData.title, price: Number(planData.price), durationValue: Number(planData.durationValue), durationType: planData.durationType, description: planData.description },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      toast.success("تم تحديث الخطة");
       setEditMode(false);
       if (onUpdated) onUpdated();
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "❌ خطأ أثناء تحديث الخطة");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "خطأ أثناء تحديث الخطة");
     } finally {
       setSaving(false);
     }
   };
 
-  // Delete Plan
   const handleDelete = async () => {
+    setDeleting(true);
     try {
-      setDeleting(true);
-      await axios.delete(`${API_URL}/plans/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("✅ تم حذف الخطة بنجاح");
+      await axios.delete(`${API_URL}/plans/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      toast.success("تم حذف الخطة");
       if (onDeleted) onDeleted(id);
-      setConfirmDelete(false);
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "❌ خطأ أثناء حذف الخطة");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "خطأ أثناء حذف الخطة");
     } finally {
       setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all border border-[#2a2a2a] flex flex-col gap-4 relative">
-      {/* Actions */}
-      <div className="flex gap-2 w-full items-center justify-between">
-        {editMode ? (
-          <>
-            <button onClick={handleSave} disabled={saving} className={`cursor-pointer text-green-400 hover:text-green-600 flex items-center gap-1 ${saving ? "opacity-70 cursor-not-allowed" : ""}`}>
-              {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
-            </button>
-            <button onClick={() => setEditMode(false)} disabled={saving} className={`cursor-pointer text-yellow-400 hover:text-yellow-600 flex items-center gap-1 ${saving ? "opacity-70 cursor-not-allowed" : ""}`}>
-              <FaUndo />
-            </button>
-          </>
-        ) : (
-          <>
-            <button onClick={() => setEditMode(true)} disabled={deleting} className="text-blue-400 hover:text-blue-600 cursor-pointer">
-              <FaEdit />
-            </button>
-            <button onClick={() => setConfirmDelete(true)} disabled={deleting} className={`text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer ${deleting ? "opacity-70 cursor-not-allowed" : ""}`}>
-              {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Title */}
-      {editMode ? (
-        <input type="text" value={planData.title} onChange={(e) => setPlanData({ ...planData, title: e.target.value })} disabled={saving} className="p-2 bg-[#111] text-white rounded border border-gray-700 outline-none focus:border-[#1998e1] transition" />
-      ) : (
-        <h3 className="text-lg font-bold text-[#1998e1]">{planData.title}</h3>
-      )}
-
-      {/* Duration */}
-      <div className="flex items-center gap-2 text-gray-300 text-sm">
-        <FaCalendarAlt className="text-[#1998e1]" />
-        {editMode ? (
-          <div className="flex gap-2">
-            <input type="number" value={planData.durationValue} onChange={(e) => setPlanData({ ...planData, durationValue: e.target.value })} disabled={saving} className="p-1 w-16 bg-[#111] text-white rounded border border-gray-700 outline-none focus:border-[#1998e1] transition" />
-            <select value={planData.durationType} onChange={(e) => setPlanData({ ...planData, durationType: e.target.value })} disabled={saving} className="p-1 bg-[#111] text-white rounded border border-gray-700 focus:border-[#1998e1] transition">
-              <option value="day">يوم</option>
-              <option value="week">أسبوع</option>
-              <option value="month">شهر</option>
-              <option value="year">سنة</option>
-            </select>
-          </div>
-        ) : (
-          <span>{`${planData.durationValue} ${planData.durationType}`}</span>
-        )}
+    <motion.div
+      whileHover={{ y: -3 }}
+      className="card"
+      style={{ padding: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem", position: "relative" }}
+    >
+      {/* Action row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontWeight: 700, color: "var(--blue)", fontSize: "1rem" }}>
+          {editMode
+            ? <input className="input" style={{ fontWeight: 700, fontSize: "0.95rem" }} value={planData.title} onChange={e => setPlanData({ ...planData, title: e.target.value })} disabled={saving} />
+            : planData.title
+          }
+        </span>
+        <div style={{ display: "flex", gap: "0.4rem" }}>
+          {editMode ? (
+            <>
+              <button onClick={handleSave} disabled={saving} className="btn btn-success btn-sm btn-icon">
+                {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+              </button>
+              <button onClick={() => setEditMode(false)} disabled={saving} className="btn btn-ghost btn-sm btn-icon">
+                <FaUndo />
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setEditMode(true)} className="btn btn-ghost btn-sm btn-icon">
+                <FaEdit style={{ color: "var(--blue)", fontSize: "0.8rem" }} />
+              </button>
+              <button onClick={() => setConfirmDelete(true)} disabled={deleting} className="btn btn-danger btn-sm btn-icon">
+                {deleting ? <FaSpinner className="animate-spin" style={{ fontSize: "0.8rem" }} /> : <FaTrash style={{ fontSize: "0.8rem" }} />}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Price */}
-      <div className="flex items-center gap-2 text-white text-xl font-bold mt-2">
-        <FaMoneyBillWave className="text-green-400" />
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <FaMoneyBillWave style={{ color: "var(--green)" }} />
+        {editMode
+          ? <input className="input" type="number" style={{ width: 100 }} value={planData.price} onChange={e => setPlanData({ ...planData, price: e.target.value })} disabled={saving} />
+          : <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "var(--green)" }}>{planData.price}</span>
+        }
+      </div>
+
+      {/* Duration */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: "0.85rem" }}>
+        <FaCalendarAlt style={{ color: "var(--blue)" }} />
         {editMode ? (
-          <input type="number" value={planData.price} onChange={(e) => setPlanData({ ...planData, price: e.target.value })} disabled={saving} className="p-1 w-24 bg-[#111] text-white rounded border border-gray-700 outline-none focus:border-[#1998e1] transition" />
+          <div style={{ display: "flex", gap: 6 }}>
+            <input className="input" type="number" style={{ width: 70 }} value={planData.durationValue} onChange={e => setPlanData({ ...planData, durationValue: e.target.value })} disabled={saving} />
+            <select className="input" style={{ width: 100 }} value={planData.durationType} onChange={e => setPlanData({ ...planData, durationType: e.target.value })} disabled={saving}>
+              {DURATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
         ) : (
-          planData.price
+          <span>{planData.durationValue} {planData.durationType}</span>
         )}
       </div>
 
       {/* Description */}
       {editMode ? (
-        <textarea value={planData.description} onChange={(e) => setPlanData({ ...planData, description: e.target.value })} disabled={saving} className="p-2 w-full bg-[#111] text-white rounded border border-gray-700 outline-none focus:border-[#1998e1] transition" rows={3} placeholder="الوصف" />
-      ) : (
-        description && (
-          <div className="flex items-start gap-2 text-gray-400 text-sm mt-2 leading-relaxed">
-            <FaInfoCircle className="text-[#1998e1] mt-0.5" />
-            <span>{planData.description}</span>
-          </div>
-        )
-      )}
-
-      {/* Confirm Delete */}
-      {confirmDelete && (
-        <div className="absolute inset-0 bg-black/70 flex flex-col justify-center items-center rounded-2xl p-4">
-          <div className="bg-[#1a1a1a] p-6 rounded-xl shadow-lg flex flex-col items-center gap-4 w-full max-w-xs text-center">
-            <FaExclamationTriangle className="text-red-500 text-4xl animate-pulse" />
-            <p className="text-white font-semibold">هل أنت متأكد من حذف هذه الخطة؟</p>
-            <div className="flex gap-4 mt-2">
-              <button onClick={handleDelete} disabled={deleting} className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition cursor-pointer">
-                {deleting ? <FaSpinner className="animate-spin" /> : "حذف"}
-              </button>
-              <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition cursor-pointer">
-                إلغاء
-              </button>
-            </div>
-          </div>
+        <textarea className="input" rows={2} style={{ resize: "vertical" }} value={planData.description} onChange={e => setPlanData({ ...planData, description: e.target.value })} disabled={saving} placeholder="الوصف" />
+      ) : planData.description ? (
+        <div style={{ display: "flex", gap: 6, color: "var(--text-muted)", fontSize: "0.82rem" }}>
+          <FaInfoCircle style={{ color: "var(--blue)", marginTop: 2, flexShrink: 0 }} />
+          <span>{planData.description}</span>
         </div>
-      )}
-    </div>
+      ) : null}
+
+      {/* Confirm delete overlay */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
+          >
+            <div style={{ textAlign: "center", padding: "1.25rem" }}>
+              <FaExclamationTriangle style={{ color: "var(--red)", fontSize: "2rem", marginBottom: "0.6rem" }} />
+              <div style={{ fontWeight: 700, color: "var(--text-main)", marginBottom: "1rem", fontSize: "0.9rem" }}>
+                هل أنت متأكد من حذف هذه الخطة؟
+              </div>
+              <div style={{ display: "flex", gap: "0.6rem", justifyContent: "center" }}>
+                <button onClick={handleDelete} disabled={deleting} className="btn btn-danger btn-sm">
+                  {deleting ? <FaSpinner className="animate-spin" /> : "حذف"}
+                </button>
+                <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="btn btn-ghost btn-sm">إلغاء</button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

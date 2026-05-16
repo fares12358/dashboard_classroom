@@ -2,191 +2,133 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  FaIdBadge,
-  FaUser,
-  FaEnvelope,
-  FaPhone,
-  FaCalendarAlt,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaArrowLeft,
-  FaMoneyBillWave,
-  FaCalendarCheck,
-  FaCreditCard,
+  FaIdBadge, FaUser, FaEnvelope, FaPhone, FaCalendarAlt,
+  FaCheckCircle, FaTimesCircle, FaArrowRight, FaMoneyBillWave,
+  FaCalendarCheck, FaCreditCard, FaChalkboardTeacher,
 } from "react-icons/fa";
 import { useAppContext } from "@/app/Context/AppContext";
 
-const StudentDetailsPage = () => {
+export default function StudentDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { setActivePage, students, isLogin, user } = useAppContext();
-
+  const { students, isLogin, user } = useAppContext();
   const [student, setStudent] = useState(null);
 
   useEffect(() => {
-    if (students && id) {
-      const found = students.find((s) => String(s.id) === String(id));
-      setStudent(found || null);
-      console.log(found);
-
-    } else {
-      router.back();
-    }
-  }, [students, id]);
-
-  const handleGoBack = () => {
-    setActivePage("students");
-    router.push("/");
-  };
+    const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
+    if (!token || !user || !isLogin) { router.push("/Pages/Auth/login"); return; }
+  }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token || !user || !isLogin) {
-      router.push("/Pages/Auth/login");
-    }
-  }, [])
+    if (!students || !id) { router.back(); return; }
+    const found = students.find(s => String(s.id) === String(id));
+    setStudent(found || null);
+  }, [students, id]);
 
+  if (!student) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-root)" }}>
+      <div className="spinner" />
+    </div>
+  );
 
-  if (!student) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
-        جاري تحميل بيانات الطالب...
-      </div>
-    );
-  }
-
+  const InfoRow = ({ icon: Icon, label, value, valueClass = "" }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0.5rem 0" }}>
+      <Icon style={{ color: "var(--blue)", fontSize: "0.85rem", flexShrink: 0 }} />
+      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", minWidth: 110 }}>{label}:</span>
+      <span style={{ fontWeight: 600, fontSize: "0.85rem" }} className={valueClass}>{value}</span>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#090909] text-white py-8 px-4 md:px-8 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[#1998e1]">تفاصيل الطالب</h2>
-        <button
-          onClick={handleGoBack}
-          className="bg-[#1998e1]/20 text-[#1998e1] cursor-pointer p-4 rounded-full hover:bg-[#1998e1]/30 transition"
-        >
-          <FaArrowLeft className="text-[#1998e1] text-md md:text-lg" />
-        </button>
-      </div>
-
-      {/* بيانات الطالب */}
-      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg border border-[#2a2a2a] space-y-4">
-        <h3 className="text-lg font-bold text-[#1998e1] mb-2">بيانات الطالب</h3>
-
-        <div className="flex items-center gap-2 text-gray-300">
-          <FaIdBadge className="text-[#1998e1]" />
-          <span className="text-xs md:text-sm">كود الطالب:</span>
-          <span className="font-bold text-xs md:text-sm">{student.id}</span>
+    <div style={{ minHeight: "100vh", background: "var(--bg-root)", color: "var(--text-main)", padding: "1.75rem 1.25rem" }} dir="rtl">
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+          <div className="section-title">تفاصيل الطالب</div>
+          <button onClick={() => router.push("/")} className="btn btn-ghost btn-sm btn-icon">
+            <FaArrowRight />
+          </button>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-300">
-          <FaUser className="text-[#1998e1]" />
-          <span className="text-xs md:text-sm">الاسم:</span>
-          <span className="font-bold text-xs md:text-sm">{student.name}</span>
+        {/* Student card */}
+        <div className="card" style={{ padding: "1.4rem", marginBottom: "1rem" }}>
+          {/* Avatar */}
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.1rem", paddingBottom: "1.1rem", borderBottom: "1px solid var(--border)" }}>
+            <div style={{
+              width: 50, height: 50, borderRadius: "50%",
+              background: "var(--blue-dim)", border: "1px solid var(--border-blue)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--blue)", fontSize: "1.3rem", flexShrink: 0,
+            }}>
+              <FaUser />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{student.name}</div>
+              <span className={`badge ${student.status === "active" ? "badge-green" : "badge-red"}`} style={{ marginTop: 4 }}>
+                {student.status === "active" ? <><FaCheckCircle /> نشط</> : <><FaTimesCircle /> غير نشط</>}
+              </span>
+            </div>
+          </div>
+
+          <InfoRow icon={FaIdBadge}     label="كود الطالب"     value={String(student.id)} />
+          <InfoRow icon={FaEnvelope}    label="البريد"          value={student.email} />
+          <InfoRow icon={FaPhone}       label="الهاتف"          value={student.phone || "—"} />
+          <InfoRow icon={FaCalendarAlt} label="تاريخ الانضمام" value={new Date(student.createdAt).toLocaleDateString("ar-EG")} />
         </div>
 
-        <div className="flex items-center gap-2 text-gray-300">
-          <FaEnvelope className="text-[#1998e1]" />
-          <span className="text-xs md:text-sm">البريد الإلكتروني:</span>
-          <span className="font-bold text-xs md:text-sm">{student.email}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-gray-300">
-          <FaPhone className="text-[#1998e1]" />
-          <span className="text-xs md:text-sm">رقم الهاتف:</span>
-          <span className="font-bold text-xs md:text-sm">{student.phone}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-gray-300">
-          <FaCalendarAlt className="text-[#1998e1]" />
-          <span className="text-xs md:text-sm">تاريخ الانضمام:</span>
-          <span className="font-bold text-xs md:text-sm">
-            {new Date(student.createdAt).toLocaleDateString("ar-EG")}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-gray-300">
-          {student.status === "active" ? (
-            <FaCheckCircle className="text-green-500" />
-          ) : (
-            <FaTimesCircle className="text-red-500" />
-          )}
-          <span className="text-xs md:text-sm">الحالة:</span>
-          <span
-            className={`font-bold text-xs md:text-sm ${student.status === "active" ? "text-green-400" : "text-red-400"
-              }`}
-          >
-            {student.status === "active" ? "نشط" : "غير نشط"}
-          </span>
-        </div>
-      </div>
-
-      {/* الفصول */}
-      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg border border-[#2a2a2a]">
-        <h3 className="text-lg font-bold text-[#1998e1] mb-4">الفصول</h3>
-        <ul className="list-disc list-inside ml-6 text-xs md:text-sm space-y-1">
+        {/* Classes */}
+        <div className="card" style={{ padding: "1.4rem", marginBottom: "1rem" }}>
+          <div style={{ fontWeight: 700, color: "var(--blue)", marginBottom: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}>
+            <FaChalkboardTeacher /> الفصول الدراسية
+          </div>
           {Array.isArray(student.classes) && student.classes.length > 0 ? (
-            student.classes.map((cls, idx) => (
-              <li key={idx} className="font-bold text-gray-200">
-                {typeof cls === "string" ? cls : cls.name}
-              </li>
-            ))
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {student.classes.map((cls, idx) => (
+                <div key={idx} style={{ background: "var(--bg-panel)", borderRadius: 9, padding: "0.5rem 0.85rem", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: 7 }}>
+                  <FaChalkboardTeacher style={{ color: "var(--blue)", fontSize: "0.8rem" }} />
+                  {typeof cls === "string" ? cls : cls.name}
+                </div>
+              ))}
+            </div>
           ) : (
-            <li className="text-gray-500">لا يوجد فصول مسجلة</li>
+            <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>لا يوجد فصول مسجلة</div>
           )}
-        </ul>
-      </div>
+        </div>
 
-      {/* المعاملات */}
-      <div className="bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg border border-[#2a2a2a]">
-        <h3 className="text-lg font-bold text-[#1998e1] mb-4">المعاملات</h3>
-
-        {Array.isArray(student.transactions) && student.transactions.length > 0 ? (
-          <div className="space-y-4">
-            {student.transactions.map((tx, idx) => (
-              <div
-                key={idx}
-                className="bg-[#111] border border-[#2a2a2a] rounded-xl p-4 space-y-2"
-              >
-                <div className="flex items-center gap-2 text-gray-300">
-                  <FaMoneyBillWave className="text-green-400" />
-                  <span className="text-sm">
-                    المبلغ:{" "}
-                    <span className="font-bold">{tx.plan.price} {tx.currency}</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-300">
-                  <FaCalendarCheck className="text-[#1998e1]" />
-                  <span className="text-sm">
-                    التاريخ:{" "}
-                    <span className="font-bold">
-                      {new Date(tx.createdAt).toLocaleDateString("ar-EG")}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-300">
-                  <FaCreditCard className="text-[#1998e1]" />
-                  <span className="text-sm">
-                    الحالة:{" "}
-                    <span
-                      className={`font-bold ${tx.status === "succeeded"
-                        ? "text-green-400"
-                        : "text-red-400"
-                        }`}
-                    >
+        {/* Transactions */}
+        <div className="card" style={{ padding: "1.4rem" }}>
+          <div style={{ fontWeight: 700, color: "var(--blue)", marginBottom: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}>
+            <FaMoneyBillWave /> المعاملات المالية
+          </div>
+          {Array.isArray(student.transactions) && student.transactions.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {student.transactions.map((tx, idx) => (
+                <div key={idx} style={{ background: "var(--bg-panel)", borderRadius: 10, padding: "0.85rem" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.88rem" }}>
+                      <FaMoneyBillWave style={{ color: "var(--green)" }} />
+                      {/* FIX: tx.plan may be null */}
+                      <strong style={{ color: "var(--green)" }}>
+                        {tx.plan ? `$${tx.plan.price} ${tx.currency}` : `$— ${tx.currency || ""}`}
+                      </strong>
+                    </div>
+                    <span className={`badge ${tx.status === "succeeded" ? "badge-green" : "badge-red"}`}>
+                      <FaCreditCard style={{ fontSize: "0.65rem" }} />
                       {tx.status === "succeeded" ? "ناجحة" : "فاشلة"}
                     </span>
-                  </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                    <FaCalendarCheck style={{ color: "var(--blue)", fontSize: "0.75rem" }} />
+                    {new Date(tx.createdAt).toLocaleDateString("ar-EG")}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-sm">لا يوجد معاملات</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>لا يوجد معاملات</div>
+          )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default StudentDetailsPage;
+}

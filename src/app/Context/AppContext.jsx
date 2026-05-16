@@ -1,14 +1,12 @@
 "use client";
 import React, { createContext, useContext, useState } from "react";
 
-// Create Context
 const AppContext = createContext();
 
-// Provider Component
 export const AppProvider = ({ children }) => {
-  // 🔹 Example global states
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
+  // activeTab is only used for backward compat - classroom page uses its own local state now
   const [activeTab, setActiveTab] = useState("home");
   const [TapssidebarOpen, setTapsSidebarOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(false);
@@ -21,14 +19,13 @@ export const AppProvider = ({ children }) => {
   const [reports, setReports] = useState(null);
   const [homeReport, setHomeReport] = useState(null);
 
-
-
-  // class
+  // Per-class cached data
   const [classesData, setClassesData] = useState([]);
-  // ✅ Find or create a class slot in context
+
+  // ── Find or create a class slot in context ──────────────────────
   const openClass = (id) => {
-    setClassesData((prev) => {
-      if (prev.find((c) => c.id === id)) return prev;
+    setClassesData(prev => {
+      if (prev.find(c => c.id === id)) return prev;
       return [
         ...prev,
         {
@@ -37,6 +34,7 @@ export const AppProvider = ({ children }) => {
           students: null,
           files: null,
           tasks: null,
+          /* FIX: key must match what ReceivedTaskTab reads */
           receivedTasks: null,
           notes: null,
           videos: null,
@@ -44,44 +42,38 @@ export const AppProvider = ({ children }) => {
       ];
     });
   };
-  // ✅ Save tab data for class
+
+  // ── Save tab data for a class ────────────────────────────────────
   const setClassTabData = (id, tab, data) => {
-    setClassesData((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, [tab]: data } : c
-      )
+    setClassesData(prev =>
+      prev.map(c => c.id === id ? { ...c, [tab]: data } : c)
     );
   };
 
-  // ✅ Get class data
-  const getClassData = (id) => {
-    return classesData.find((c) => c.id === id) || null;
-  };
+  // ── Get all data for a class ─────────────────────────────────────
+  const getClassData = (id) => classesData.find(c => c.id === id) || null;
 
   return (
-    <AppContext.Provider
-      value={{
-        sidebarOpen, setSidebarOpen,
-        user, setUser,
-        isLogin, setIsLogin,
-        classrooms, setClassrooms,
-        activePage, setActivePage,
-        activeTab, setActiveTab,
-        TapssidebarOpen, setTapsSidebarOpen,
-        students, setStudents,
-        plans, setPlans,
-        transactions, setTransactions,
-        pendingUsers, setpendingUsers,
-        setClassesData, classesData,
-        openClass, setClassTabData, getClassData,
-        reports, setReports,
-        homeReport, setHomeReport
-      }}
-    >
+    <AppContext.Provider value={{
+      sidebarOpen, setSidebarOpen,
+      user, setUser,
+      isLogin, setIsLogin,
+      classrooms, setClassrooms,
+      activePage, setActivePage,
+      activeTab, setActiveTab,
+      TapssidebarOpen, setTapsSidebarOpen,
+      students, setStudents,
+      plans, setPlans,
+      transactions, setTransactions,
+      pendingUsers, setpendingUsers,
+      setClassesData, classesData,
+      openClass, setClassTabData, getClassData,
+      reports, setReports,
+      homeReport, setHomeReport,
+    }}>
       {children}
     </AppContext.Provider>
   );
 };
 
-// Custom hook for easy usage
 export const useAppContext = () => useContext(AppContext);

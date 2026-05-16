@@ -1,95 +1,75 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import {
-  FaCopy,
-  FaUsers,
-  FaCalendarAlt,
-  FaIdBadge,
-  FaVideo,
-  FaFileAlt,
-  FaFilePdf
-} from "react-icons/fa";
-import toast, { Toaster } from "react-hot-toast";
+import { FaCopy, FaUsers, FaCalendarAlt, FaVideo, FaFilePdf, FaFileAlt, FaCircle } from "react-icons/fa";
+import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 
-export default function ClassroomCard({ id, name, studentsCount, videosCount, pdfsCount, tasksCount, createdAt }) {
+export default function ClassroomCard({ id, name, studentsCount, videosCount, pdfsCount, tasksCount, createdAt, status }) {
   const router = useRouter();
 
-  // نسخ الـ ID
-  const handleCopy = () => {
+  const handleCopy = (e) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(id);
     toast.success("تم نسخ الكود");
   };
 
-  // تنسيق التاريخ
-  const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString("ar-EG", {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    });
-  };
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+  const stats = [
+    { icon: FaUsers,   val: studentsCount ?? 0, label: "طالب" },
+    { icon: FaVideo,   val: videosCount ?? 0,   label: "فيديو" },
+    { icon: FaFilePdf, val: pdfsCount ?? 0,     label: "ملف" },
+    { icon: FaFileAlt, val: tasksCount ?? 0,    label: "مهمة" },
+  ];
 
   return (
-    <>
-      <Toaster position="top-center" reverseOrder={false} />
-      <div
-        onClick={() => router.push(`/Pages/ClassRoom/${id}`)}
-        className="relative bg-gradient-to-br from-[#1e1e1e] to-[#151515] p-6 rounded-2xl shadow-lg cursor-pointer 
-                 hover:shadow-xl hover:scale-[1.01] transition-all ease-in-out duration-200 border border-[#2a2a2a] space-y-3"
-      >
-        {/* زر نسخ */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCopy();
-          }}
-          className="absolute top-3 left-3 p-2 rounded-full bg-[#1998e1]/10 text-[#1998e1] 
-                     hover:bg-[#1998e1] hover:text-white transition cursor-pointer"
-          title="نسخ الكود"
-        >
-          <FaCopy />
-        </button>
-
-        {/* اسم الكلاس */}
-        <h3 className="text-xl font-bold text-[#1998e1] mb-4">{name}</h3>
-
-        <div className="grid grid-cols-2 gap-3 mt-5">
-          {/* ID */}
-          <div className="flex items-center gap-2 text-gray-300 text-sm">
-            <FaIdBadge className="text-[#1998e1]" />
-            <span title={id}>
-              {id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id}
+    <motion.div
+      whileHover={{ y: -3 }}
+      onClick={() => router.push(`/Pages/ClassRoom/${id}`)}
+      className="card card-hover"
+      style={{ padding: "1.2rem", cursor: "pointer", position: "relative" }}
+    >
+      {/* Top row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.85rem" }}>
+        <div style={{ flex: 1, minWidth: 0, paddingLeft: "2rem" }}>
+          <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-main)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {name}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.75rem" }}>
+            <FaCircle style={{ fontSize: "0.55rem", color: status === "active" ? "var(--green)" : "var(--yellow)" }} />
+            <span style={{ color: status === "active" ? "var(--green)" : "var(--yellow)" }}>
+              {status === "active" ? "نشط" : "معلق"}
             </span>
           </div>
-
-          {/* عدد الطلاب */}
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaUsers className="text-[#1998e1]" /> {studentsCount} طالب
-          </div>
-
-          {/* الفيديوهات */}
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaVideo className="text-[#1998e1]" /> {videosCount} فيديو
-          </div>
-
-          {/* الملفات */}
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaFilePdf className="text-[#1998e1]" /> {pdfsCount} ملف
-          </div>
-
-          {/* المهام */}
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaFileAlt className="text-[#1998e1]" /> {tasksCount} مهمة
-          </div>
-
-          {/* تاريخ الإنشاء */}
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <FaCalendarAlt className="text-[#1998e1]" /> {formatDate(createdAt)}
-          </div>
         </div>
+        <button
+          onClick={handleCopy}
+          className="btn btn-ghost btn-sm btn-icon"
+          title="نسخ المعرّف"
+          style={{ flexShrink: 0 }}
+        >
+          <FaCopy style={{ fontSize: "0.8rem" }} />
+        </button>
       </div>
-    </>
+
+      {/* Stats grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.85rem" }}>
+        {stats.map(({ icon: Icon, val, label }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--bg-panel)", borderRadius: 8, padding: "0.4rem 0.7rem" }}>
+            <Icon style={{ color: "var(--blue)", fontSize: "0.8rem", flexShrink: 0 }} />
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+              <strong style={{ color: "var(--text-main)", marginLeft: 3 }}>{val}</strong> {label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Date */}
+      <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-dim)", fontSize: "0.75rem" }}>
+        <FaCalendarAlt style={{ color: "var(--blue)", fontSize: "0.7rem" }} />
+        {formatDate(createdAt)}
+      </div>
+    </motion.div>
   );
 }

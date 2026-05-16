@@ -1,129 +1,95 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import StudentCard from "./StudentCard";
 import { API_URL } from "@/app/utils/api";
 import { useAppContext } from "@/app/Context/AppContext";
-import { FaSyncAlt } from "react-icons/fa";
+import { FaSyncAlt, FaSpinner, FaUsers } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function StudentsTab({ classID }) {
   const { getClassData, setClassTabData, openClass } = useAppContext();
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const token = localStorage.getItem("adminToken");
 
-  // 🔹 Ensure class slot exists in context
-  useEffect(() => {
-    if (classID) openClass(classID);
-  }, [classID]);
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
-  // 🔹 Get students from context
+  useEffect(() => { if (classID) openClass(classID); }, [classID]);
+
   const studentsClass = getClassData(classID)?.students;
 
-  // ✅ Fetch students
   const fetchStudents = async (force = false) => {
     if (!classID) return;
-
-    if (studentsClass && !force) return; // use cached data
-
+    if (studentsClass !== null && studentsClass !== undefined && !force) return;
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/classe/${classID}/student`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.data.success) {
         setClassTabData(classID, "students", res.data.students);
-        toast.success("✅ تم جلب الطلاب بنجاح");
       } else {
-        toast.error(res.data.message || "فشل في جلب الطلاب ❌");
+        toast.error(res.data.message || "فشل في جلب الطلاب");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("حدث خطأ أثناء جلب الطلاب ❌");
+    } catch {
+      toast.error("حدث خطأ أثناء جلب الطلاب");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Manual refresh
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchStudents(true); // force fetch
-    setRefreshing(false);
-  };
-
-  // 🔹 Initial fetch
-  useEffect(() => {
-    if (!classID) return;
-    fetchStudents();
-  }, [classID]);
+  useEffect(() => { if (classID) fetchStudents(); }, [classID]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 space-y-4"
-    >
-      <Toaster position="top-center" reverseOrder={false} />
-
-      {/* Header + Refresh button */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="flex justify-between items-center mb-4"
-      >
-        <h2 className="text-2xl font-bold text-[#1998e1]">الطلاب</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg transition cursor-pointer disabled:opacity-50"
+    <div style={{ maxWidth: 900 }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>الطلاب</div>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{studentsClass?.length ?? 0} طالب مسجل في هذا الكلاس</div>
+        </div>
+        <motion.button
+          whileTap={{ scale: 0.92 }}
+          onClick={() => fetchStudents(true)}
+          disabled={loading}
+          className="btn btn-ghost btn-sm"
         >
-          {refreshing ? (
-            <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-              <FaSyncAlt />
-            </motion.span>
-          ) : (
-            <FaSyncAlt />
-          )}
+          {loading ? <FaSpinner className="animate-spin" /> : <FaSyncAlt />}
           <span className="hidden md:inline">تحديث</span>
-        </button>
-      </motion.div>
+        </motion.button>
+      </div>
 
-      {/* Students List */}
-      {loading ? (
-        <p className="text-gray-300 animate-pulse">⏳ جاري التحميل...</p>
-      ) : studentsClass?.length > 0 ? (
-        <motion.div
-          layout
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-        >
-          <AnimatePresence>
-            {studentsClass.map((student, index) => (
-              <motion.div
-                key={student._id}
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                <StudentCard classID={classID} student={student} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      ) : (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-gray-300"
-        >
-          📌 لا يوجد طلاب حتى الآن.
-        </motion.p>
+      {/* Loading */}
+      {loading && !studentsClass && (
+        <div style={{ display: "flex", justifyContent: "center", padding: "3rem", color: "var(--text-muted)" }}>
+          <FaSpinner className="animate-spin" style={{ fontSize: "2rem" }} />
+        </div>
       )}
-    </motion.div>
+
+      {/* Empty */}
+      {!loading && studentsClass?.length === 0 && (
+        <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "3rem 0" }}>
+          <FaUsers style={{ fontSize: "2.5rem", color: "var(--text-dim)", marginBottom: "0.75rem" }} />
+          <div>لا يوجد طلاب في هذا الكلاس حتى الآن</div>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "0.85rem" }}>
+        <AnimatePresence>
+          {studentsClass?.map((student, idx) => (
+            <motion.div
+              key={student._id}
+              initial={{ opacity: 0, scale: 0.95, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 14 }}
+              transition={{ delay: idx * 0.04, duration: 0.25 }}
+            >
+              <StudentCard classID={classID} student={student} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

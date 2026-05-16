@@ -1,238 +1,148 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import PlanCard from "../Components/PlanCard";
-import {
-  FaPlus,
-  FaSpinner,
-  FaClipboardList,
-  FaDollarSign,
-  FaClock,
-  FaFileAlt,
-  FaSync,
-} from "react-icons/fa";
-import toast, { Toaster } from "react-hot-toast";
+import { FaPlus, FaSpinner, FaClipboardList, FaDollarSign, FaClock, FaFileAlt, FaSync } from "react-icons/fa";
+import toast from "react-hot-toast";
 import axios from "axios";
 import { API_URL } from "../utils/api.js";
 import { useAppContext } from "../Context/AppContext";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Plans = () => {
+const DURATION_OPTIONS = [
+  { value: "day",   label: "يوم" },
+  { value: "week",  label: "أسبوع" },
+  { value: "month", label: "شهر" },
+  { value: "year",  label: "سنة" },
+];
+
+export default function Plans() {
   const { plans, setPlans } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const token = localStorage.getItem("adminToken");
+  const [showForm, setShowForm] = useState(false);
+  const [newPlan, setNewPlan] = useState({ title: "", description: "", price: "", durationValue: "", durationType: "" });
 
-  const [newPlan, setNewPlan] = useState({
-    title: "",
-    description: "",
-    price: "",
-    durationValue: "",
-    durationType: "",
-  });
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
-  // 🔹 Get Plans
   const fetchPlans = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axios.get(`${API_URL}/plans`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(`${API_URL}/plans`, { headers: { Authorization: `Bearer ${getToken()}` } });
       setPlans(res.data.plans || []);
-    } catch (error) {
-      console.error("Error fetching plans:", error);
-      toast.error("❌ خطأ أثناء تحميل الخطط");
+    } catch {
+      toast.error("خطأ أثناء تحميل الخطط");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Add Plan
   const addPlan = async () => {
-    if (!newPlan.title || !newPlan.price || !newPlan.durationValue || !newPlan.durationType) {
-      toast.error("⚠️ من فضلك أدخل جميع البيانات");
+    const { title, price, durationValue, durationType } = newPlan;
+    if (!title || !price || !durationValue || !durationType) {
+      toast.error("أدخل جميع البيانات المطلوبة");
       return;
     }
-
+    setAdding(true);
     try {
-      setAdding(true);
-      const payload = {
-        ...newPlan,
-        price: Number(newPlan.price),
-        durationValue: Number(newPlan.durationValue),
-      };
-
-      const res = await axios.post(`${API_URL}/plans/add`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.data?.plan) throw new Error("الخادم لم يرجع البيانات المتوقعة");
-
-      fetchPlans();
+      const res = await axios.post(`${API_URL}/plans/add`,
+        { ...newPlan, price: Number(price), durationValue: Number(durationValue) },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      if (!res.data?.plan) throw new Error("response missing plan");
+      await fetchPlans();
       setNewPlan({ title: "", description: "", price: "", durationValue: "", durationType: "" });
-      toast.success("✅ تمت إضافة الخطة بنجاح");
-    } catch (error) {
-      console.error("Error adding plan:", error);
-      toast.error(error.response?.data?.message || "❌ خطأ أثناء إضافة الخطة");
+      setShowForm(false);
+      toast.success("تمت إضافة الخطة بنجاح");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "خطأ أثناء إضافة الخطة");
     } finally {
       setAdding(false);
     }
   };
 
-  // 🔹 Refresh Plans manually
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      await fetchPlans();
-      toast.success("✅ تم تحديث الخطط");
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => { if (plans === null) fetchPlans(); }, []);
 
-  useEffect(() => {
-    if (plans !== null) return;
-    fetchPlans();
-  }, []);
-
-  // 🔹 Handlers for PlanCard callbacks
-  const handleDeleted = (deletedId) => {
-    setPlans((prev) => prev.filter((p) => p._id !== deletedId));
-    toast.success("✅ تم حذف الخطة");
-  };
-
-  const handleUpdated = () => {
-    fetchPlans();
-  };
+  const handleDeleted = (id) => setPlans(prev => prev.filter(p => p._id !== id));
+  const handleUpdated = () => fetchPlans();
 
   return (
     <div>
-      <Toaster />
-
-      {/* Title + Refresh */}
-      <div className="flex justify-between items-center mb-6 mr-10 md:mr-0">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-[#1998e1]">
-          <FaClipboardList /> الخطط
-        </h2>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-3 py-2 rounded-lg transition disabled:opacity-50"
-        >
-          {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
-          <span className="hidden md:inline">تحديث</span>
-        </button>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div>
+          <div className="section-title">الخطط التعليمية</div>
+          <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: 2 }}>{plans?.length ?? 0} خطة متاحة</div>
+        </div>
+        <div style={{ display: "flex", gap: "0.6rem" }}>
+          <motion.button whileTap={{ scale: 0.92 }} onClick={fetchPlans} disabled={loading} className="btn btn-ghost btn-sm">
+            {loading ? <FaSpinner className="animate-spin" /> : <FaSync />}
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.92 }} onClick={() => setShowForm(v => !v)} className="btn btn-primary btn-sm">
+            <FaPlus /> {showForm ? "إغلاق" : "خطة جديدة"}
+          </motion.button>
+        </div>
       </div>
 
-      {/* إضافة خطة */}
+      {/* Add plan form */}
       <AnimatePresence>
-        <motion.div
-          key="add-plan-section"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
-          className="bg-[#1a1a1a] p-6 rounded-xl shadow mb-8 border border-gray-700"
-        >
-          <h3 className="text-xl font-semibold text-[#1998e1] mb-4 flex items-center gap-2">
-            <FaPlus /> إضافة خطة جديدة
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Title */}
-            <div className="flex items-center gap-2 bg-[#111] p-2 rounded border border-gray-700">
-              <FaClipboardList className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="اسم الخطة"
-                value={newPlan.title}
-                onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
-                className="p-2 flex-1 bg-transparent text-white outline-none"
-              />
-            </div>
-
-            {/* Duration value */}
-            <div className="flex items-center gap-2 bg-[#111] p-2 rounded border border-gray-700">
-              <FaClock className="text-gray-400" />
-              <input
-                type="number"
-                placeholder="المدة (عدد)"
-                value={newPlan.durationValue}
-                onChange={(e) => setNewPlan({ ...newPlan, durationValue: e.target.value })}
-                className="p-2 flex-1 bg-transparent text-white outline-none"
-              />
-            </div>
-
-            {/* Duration type */}
-            <select
-              value={newPlan.durationType}
-              onChange={(e) => setNewPlan({ ...newPlan, durationType: e.target.value })}
-              className="p-3 rounded bg-[#111] text-white border border-gray-700"
-            >
-              <option value="">اختر نوع المدة</option>
-              <option value="day">يوم</option>
-              <option value="week">أسبوع</option>
-              <option value="month">شهر</option>
-              <option value="year">سنة</option>
-            </select>
-
-            {/* Price */}
-            <div className="flex items-center gap-2 bg-[#111] p-2 rounded border border-gray-700">
-              <FaDollarSign className="text-gray-400" />
-              <input
-                type="number"
-                placeholder="السعر (مثال: 500)"
-                value={newPlan.price}
-                onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
-                className="p-2 flex-1 bg-transparent text-white outline-none"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="flex items-center gap-2 bg-[#111] p-2 rounded border border-gray-700 md:col-span-2">
-              <FaFileAlt className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="الوصف"
-                value={newPlan.description}
-                onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
-                className="p-2 flex-1 bg-transparent text-white outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Animated Add Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={addPlan}
-            disabled={adding}
-            className={`${adding
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-green-600/20 hover:bg-green-600/30"
-              } text-green-500 px-6 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer`}
+        {showForm && (
+          <motion.div
+            className="card"
+            style={{ padding: "1.4rem", marginBottom: "1.5rem" }}
+            initial={{ opacity: 0, y: -14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.25 }}
           >
-            {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />}
-            {adding ? "جاري الإضافة..." : "إضافة خطة"}
-          </motion.button>
-        </motion.div>
+            <div style={{ fontWeight: 700, color: "var(--blue)", marginBottom: "1rem" }}>إضافة خطة جديدة</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
+              <div style={{ position: "relative" }}>
+                <FaClipboardList style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+                <input className="input" style={{ paddingRight: "2.2rem" }} placeholder="اسم الخطة *" value={newPlan.title} onChange={e => setNewPlan({ ...newPlan, title: e.target.value })} />
+              </div>
+              <div style={{ position: "relative" }}>
+                <FaClock style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+                <input className="input" style={{ paddingRight: "2.2rem" }} type="number" placeholder="المدة (عدد) *" value={newPlan.durationValue} onChange={e => setNewPlan({ ...newPlan, durationValue: e.target.value })} />
+              </div>
+              <select className="input" value={newPlan.durationType} onChange={e => setNewPlan({ ...newPlan, durationType: e.target.value })}>
+                <option value="">نوع المدة *</option>
+                {DURATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <div style={{ position: "relative" }}>
+                <FaDollarSign style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+                <input className="input" style={{ paddingRight: "2.2rem" }} type="number" placeholder="السعر (cents) *" value={newPlan.price} onChange={e => setNewPlan({ ...newPlan, price: e.target.value })} />
+              </div>
+              <div style={{ position: "relative", gridColumn: "1 / -1" }}>
+                <FaFileAlt style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", fontSize: "0.8rem" }} />
+                <input className="input" style={{ paddingRight: "2.2rem" }} placeholder="الوصف (اختياري)" value={newPlan.description} onChange={e => setNewPlan({ ...newPlan, description: e.target.value })} />
+              </div>
+            </div>
+            <button onClick={addPlan} disabled={adding} className="btn btn-success">
+              {adding ? <FaSpinner className="animate-spin" /> : <FaPlus />}
+              {adding ? "جاري الإضافة..." : "إضافة الخطة"}
+            </button>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {/* شبكة الخطط */}
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <FaSpinner className="animate-spin text-3xl text-[#1998e1]" />
-          <span className="ml-3 text-gray-300">جارٍ تحميل الخطط...</span>
+      {/* Loading */}
+      {loading && !plans?.length && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, color: "var(--text-muted)" }}>
+          <FaSpinner className="animate-spin" style={{ marginLeft: 8 }} /> جارٍ تحميل الخطط...
         </div>
-      ) : plans?.length > 0 ? (
-        <AnimatePresence>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans?.map((plan, index) => (
+      )}
+
+      {/* Plans grid */}
+      {plans?.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: "1rem" }}>
+          <AnimatePresence>
+            {plans.map((plan, idx) => (
               <motion.div
-                key={plan._id || index}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                key={plan._id || idx}
+                initial={{ opacity: 0, y: 18, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25, delay: idx * 0.05 }}
               >
                 <PlanCard
                   id={plan._id}
@@ -245,13 +155,16 @@ const Plans = () => {
                 />
               </motion.div>
             ))}
-          </div>
-        </AnimatePresence>
-      ) : (
-        <p className="text-gray-400 text-center">🚀 لا توجد خطط مضافة بعد</p>
+          </AnimatePresence>
+        </div>
+      )}
+
+      {!loading && plans?.length === 0 && (
+        <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "3rem 0" }}>
+          <FaClipboardList style={{ fontSize: "2.5rem", color: "var(--text-dim)", marginBottom: "0.75rem" }} />
+          <div>لا توجد خطط مضافة بعد</div>
+        </div>
       )}
     </div>
   );
-};
-
-export default Plans;
+}

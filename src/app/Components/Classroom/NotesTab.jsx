@@ -1,16 +1,10 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import {
-  FaTrash,
-  FaEdit,
-  FaSave,
-  FaTimes,
-  FaStickyNote,
-  FaPaperPlane,
-  FaSpinner,
-  FaSyncAlt,
+  FaTrash, FaEdit, FaSave, FaTimes, FaStickyNote,
+  FaPaperPlane, FaSpinner, FaSyncAlt,
 } from "react-icons/fa";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { API_URL } from "@/app/utils/api";
@@ -24,267 +18,198 @@ export default function NotesTab({ classID }) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // ✅ for popup confirm
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const bottomRef = useRef(null);
-  const token = localStorage.getItem("adminToken");
-  useEffect(() => {
-    if (classID) openClass(classID);
-  }, [classID]);
+
+  const getToken = () => typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
+
+  useEffect(() => { if (classID) openClass(classID); }, [classID]);
 
   const notesClass = getClassData(classID)?.notes;
 
-  // Fetch notes
   const fetchNotes = async (force = false) => {
     if (!classID) return;
-    if (notesClass && !force) return;
-
+    if (Array.isArray(notesClass) && !force) return;
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get(`${API_URL}/admin/classe/${classID}/note`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       setClassTabData(classID, "notes", res.data.notes || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("فشل تحميل الملاحظات");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchNotes();
-  }, [classID]);
+  useEffect(() => { fetchNotes(); }, [classID]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [notesClass]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [notesClass]);
-
-  // Add note
   const addNote = async () => {
-    if (!newNote.trim()) return toast.error("⚠️ لا يمكن إضافة ملاحظة فارغة");
+    if (!newNote.trim()) return toast.error("لا يمكن إضافة ملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.post(`${API_URL}/admin/classe/${classID}/note`, { msg: newNote },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.post(`${API_URL}/admin/classe/${classID}/note`, { msg: newNote }, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       setNewNote("");
       fetchNotes(true);
-      toast.success("تمت إضافة الملاحظة ✍️");
-    } catch (err) {
-      console.error(err);
+      toast.success("تمت إضافة الملاحظة");
+    } catch {
       toast.error("فشل إضافة الملاحظة");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Delete note
   const deleteNote = async (id) => {
     setDeleteLoading(true);
     try {
-      await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.delete(`${API_URL}/admin/classe/${classID}/note/${id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       fetchNotes(true);
       toast.success("تم حذف الملاحظة");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("فشل حذف الملاحظة");
     } finally {
       setDeleteLoading(false);
-      setConfirmDeleteId(null); // close modal
+      setConfirmDeleteId(null);
     }
   };
 
-  // Edit note
-  const startEdit = (note) => {
-    setEditId(note._id);
-    setEditText(note.msg);
-  };
-
   const saveEdit = async () => {
-    if (!editText.trim()) return toast.error("⚠️ لا يمكن أن تكون الملاحظة فارغة");
+    if (!editText.trim()) return toast.error("لا يمكن أن تكون الملاحظة فارغة");
     setActionLoading(true);
     try {
-      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, { msg: editText },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setEditId(null);
-      setEditText("");
+      await axios.put(`${API_URL}/admin/classe/${classID}/note/${editId}`, { msg: editText }, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setEditId(null); setEditText("");
       fetchNotes(true);
       toast.success("تم تعديل الملاحظة");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("فشل تعديل الملاحظة");
     } finally {
       setActionLoading(false);
     }
   };
 
-  const cancelEdit = () => {
-    setEditId(null);
-    setEditText("");
-  };
-
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl shadow-lg p-6 flex flex-col h-[80vh]">
-      <Toaster position="top-center" reverseOrder={false} />
-
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 180px)", maxWidth: 720 }}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-[#1998e1] flex items-center gap-2">
-          <FaStickyNote /> الملاحظات
-        </h2>
-        <button
-          onClick={() => fetchNotes(true)}
-          disabled={loading}
-          className="cursor-pointer flex items-center gap-2 bg-[#1998e1]/20 hover:bg-[#1998e1]/30 text-[#1998e1] px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
-        >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexShrink: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
+          <FaStickyNote style={{ color: "var(--blue)" }} /> الملاحظات
+          <span className="badge badge-blue">{notesClass?.length ?? 0}</span>
+        </div>
+        <motion.button whileTap={{ scale: 0.92 }} onClick={() => fetchNotes(true)} disabled={loading} className="btn btn-ghost btn-sm">
           <FaSyncAlt className={loading ? "animate-spin" : ""} />
-          <span className="hidden md:inline">تحديث</span>
-        </button>
+        </motion.button>
       </div>
 
-      {/* Notes list */}
-      <div className="flex-1 overflow-y-auto space-y-4 p-2 hidde_scroll">
-        {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <FaSpinner className="animate-spin text-[#1998e1] text-3xl" />
+      {/* Notes scroll area */}
+      <div className="hide-scroll" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.6rem", padding: "0.25rem" }}>
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+            <FaSpinner className="animate-spin" style={{ fontSize: "2rem", color: "var(--blue)" }} />
           </div>
-        ) : (
-          <AnimatePresence>
-            {notesClass?.map((note) => (
-              <motion.div
-                key={note._id}
-                className="flex justify-end"
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-              >
-                <div className="bg-[#1998e1]/20 text-white p-4 rounded-2xl shadow-md flex flex-col max-w-full break-words">
-                  {editId === note._id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        className="p-2 rounded-md bg-[#111] text-white outline-none mb-2"
-                      />
-                      <div className="flex gap-2 self-end">
-                        <button
-                          onClick={saveEdit}
-                          disabled={actionLoading}
-                          className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50 cursor-pointer"
-                        >
-                          {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition cursor-pointer"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="mb-2 flex items-start gap-2 whitespace-pre-wrap break-words">
-                        <FaStickyNote className="text-[#1998e1] shrink-0" />
-                        <span className="break-words">{note.msg}</span>
-                      </span>
-                      <span className="text-xs text-gray-400 mb-2">
+        )}
+
+        {!loading && notesClass?.length === 0 && (
+          <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem 0", fontSize: "0.9rem" }}>
+            لا توجد ملاحظات بعد — ابدأ بإضافة ملاحظة أدناه
+          </div>
+        )}
+
+        <AnimatePresence>
+          {notesClass?.map(note => (
+            <motion.div
+              key={note._id}
+              style={{ display: "flex", justifyContent: "flex-end" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div style={{
+                background: "var(--blue-dim)",
+                border: "1px solid var(--border-blue)",
+                borderRadius: "14px 4px 14px 14px",
+                padding: "0.75rem 1rem",
+                maxWidth: "80%",
+                wordBreak: "break-word",
+              }}>
+                {editId === note._id ? (
+                  <>
+                    <input
+                      className="input"
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      style={{ marginBottom: "0.5rem" }}
+                      onKeyDown={e => e.key === "Enter" && saveEdit()}
+                    />
+                    <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+                      <button onClick={saveEdit} disabled={actionLoading} className="btn btn-success btn-sm">
+                        {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                      </button>
+                      <button onClick={() => { setEditId(null); setEditText(""); }} className="btn btn-ghost btn-sm"><FaTimes /></button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: "0.9rem", lineHeight: 1.7, marginBottom: "0.35rem" }}>{note.msg}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-dim)" }}>
                         {new Date(note.createdAt).toLocaleString("ar-EG")}
                       </span>
-                      <div className="flex gap-3 self-end text-sm text-gray-300">
-                        <button
-                          onClick={() => startEdit(note)}
-                          className="text-yellow-400 cursor-pointer"
-                        >
-                          <FaEdit />
+                      <div style={{ display: "flex", gap: 5 }}>
+                        <button onClick={() => { setEditId(note._id); setEditText(note.msg); }} className="btn btn-ghost btn-sm btn-icon" style={{ padding: "2px 5px" }}>
+                          <FaEdit style={{ fontSize: "0.7rem", color: "var(--yellow)" }} />
                         </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(note._id)} // ✅ open modal
-                          className="text-red-500 cursor-pointer"
-                        >
-                          <FaTrash />
+                        <button onClick={() => setConfirmDeleteId(note._id)} className="btn btn-danger btn-sm btn-icon" style={{ padding: "2px 5px" }}>
+                          <FaTrash style={{ fontSize: "0.7rem" }} />
                         </button>
                       </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
-        <div ref={bottomRef}></div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={bottomRef} />
       </div>
 
-      {/* Add new note */}
-      <div className="flex gap-2 mt-4">
+      {/* Input area */}
+      <div style={{ flexShrink: 0, paddingTop: "0.85rem", display: "flex", gap: "0.6rem", borderTop: "1px solid var(--border)", marginTop: "0.75rem" }}>
         <input
-          type="text"
-          placeholder="✍️ أضف ملاحظة جديدة..."
+          className="input"
+          style={{ flex: 1 }}
+          placeholder="أضف ملاحظة جديدة..."
           value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          className="flex-1 p-3 rounded-lg bg-[#111] focus:border-[#1998e1] focus:outline-none border border-gray-700 text-white transition-all ease-in-out duration-300"
+          onChange={e => setNewNote(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && !actionLoading && addNote()}
         />
-        <button
-          onClick={addNote}
-          disabled={actionLoading}
-          className="bg-[#1998e1]/20 text-[#1998e1] p-3 rounded-lg hover:bg-[#1998e1]/30 transition cursor-pointer disabled:opacity-50"
-        >
+        <motion.button whileTap={{ scale: 0.9 }} onClick={addNote} disabled={actionLoading} className="btn btn-primary btn-icon">
           {actionLoading ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />}
-        </button>
+        </motion.button>
       </div>
 
-      {/* Custom Confirm Modal */}
+      {/* Delete confirm modal */}
       <AnimatePresence>
         {confirmDeleteId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-[#1a1a1a] rounded-xl p-6 w-[90%] max-w-md shadow-lg"
-            >
-              <h3 className="text-xl font-bold text-red-400 mb-4">
-                تأكيد الحذف
-              </h3>
-              <p className="text-gray-300 mb-6">
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-box" initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }}>
+              <div style={{ fontWeight: 700, color: "var(--red)", marginBottom: "0.75rem" }}>تأكيد الحذف</div>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
                 هل أنت متأكد أنك تريد حذف هذه الملاحظة؟
               </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={() => deleteNote(confirmDeleteId)}
-                  disabled={deleteLoading}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition cursor-pointer disabled:opacity-50"
-                >
-                  {deleteLoading ? (
-                    <FaSpinner className="animate-spin" />
-                  ) : (
-                    "حذف"
-                  )}
+              <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end" }}>
+                <button onClick={() => setConfirmDeleteId(null)} className="btn btn-ghost btn-sm">إلغاء</button>
+                <button onClick={() => deleteNote(confirmDeleteId)} disabled={deleteLoading} className="btn btn-danger btn-sm">
+                  {deleteLoading ? <FaSpinner className="animate-spin" /> : "حذف"}
                 </button>
               </div>
             </motion.div>
