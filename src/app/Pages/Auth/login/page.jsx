@@ -9,10 +9,10 @@ import { API_URL } from "@/app/utils/api.js";
 import { motion } from "framer-motion";
 
 const LoginPage = () => {
-  const [email, setEmail]                 = useState("");
-  const [password, setPassword]           = useState("");
+  const [email, setEmail] = useState("admin@admin.com");
+  const [password, setPassword] = useState("fares123");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [loading, setLoading]             = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { setIsLogin, setUser } = useAppContext();
   const router = useRouter();
