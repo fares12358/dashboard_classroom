@@ -1,1 +1,1 @@
-export const API_URL = "https://class-room-backend-nodejs-stop.vercel.app/api"; 
+export const API_URL = `${process.env.NEXT_PUBLIC_API}/api`; 

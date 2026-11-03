@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import axios from "axios";
 import {
   FaTrash, FaFilePdf, FaPlus, FaSpinner, FaFileAlt,
@@ -105,7 +106,7 @@ export default function FilesTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchFiles(); }, [classID]);
+  useDeferredEffect(() => { fetchFiles(); }, [classID]);
 
   return (
     <div style={{ maxWidth: 900 }}>

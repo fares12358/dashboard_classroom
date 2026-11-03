@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import ClassroomCard from "../Components/ClassroomCard";
 import { useAppContext } from "../Context/AppContext";
 import axios from "axios";
@@ -31,7 +32,7 @@ export default function Classrooms() {
     }
   };
 
-  useEffect(() => { if (!classrooms?.length) fetchClasses(); }, []);
+  useDeferredEffect(() => { if (!classrooms?.length) fetchClasses(); }, []);
 
   const handleAddClass = async (e) => {
     e.preventDefault();

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import {
   FaTrash, FaEdit, FaSave, FaTimes, FaStickyNote,
   FaPaperPlane, FaSpinner, FaSyncAlt,
@@ -43,7 +44,7 @@ export default function NotesTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchNotes(); }, [classID]);
+  useDeferredEffect(() => { fetchNotes(); }, [classID]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [notesClass]);
 
   const addNote = async () => {

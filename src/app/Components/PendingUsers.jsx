@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -50,7 +51,7 @@ export default function PendingUsers() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (pendingUsers === null) fetchPendingUsers();
     else initTimers(pendingUsers || []);
   }, []);

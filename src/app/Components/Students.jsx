@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import { useRouter } from "next/navigation";
 import {
   FaUser, FaCheckCircle, FaTimesCircle, FaCalendarAlt,
@@ -33,7 +34,7 @@ export default function Students() {
     }
   };
 
-  useEffect(() => { if (!students) fetchStudents(); }, []);
+  useDeferredEffect(() => { if (!students) fetchStudents(); }, []);
 
   const filtered = (students || []).filter(s =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||

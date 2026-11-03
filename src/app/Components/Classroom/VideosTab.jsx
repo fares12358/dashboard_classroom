@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import VideoCard from "./Video/VideoCard";
 import AddVideoSection from "./Video/AddVideoSection";
 import { FaSearch, FaVideo, FaExclamationTriangle, FaSyncAlt, FaSpinner } from "react-icons/fa";
@@ -30,7 +31,7 @@ export default function VideosTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchVideos(); }, [classID]);
+  useDeferredEffect(() => { fetchVideos(); }, [classID]);
 
   const filtered = videos.filter(v => v.name?.toLowerCase().includes(search.toLowerCase()));
 

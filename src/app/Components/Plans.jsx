@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import PlanCard from "../Components/PlanCard";
 import { FaPlus, FaSpinner, FaClipboardList, FaDollarSign, FaClock, FaFileAlt, FaSync } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -60,7 +61,7 @@ export default function Plans() {
     }
   };
 
-  useEffect(() => { if (plans === null) fetchPlans(); }, []);
+  useDeferredEffect(() => { if (plans === null) fetchPlans(); }, []);
 
   const handleDeleted = (id) => setPlans(prev => prev.filter(p => p._id !== id));
   const handleUpdated = () => fetchPlans();

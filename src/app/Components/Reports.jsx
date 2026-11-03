@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import * as FaIcons from "react-icons/fa";
 import toast from "react-hot-toast";
 import { API_URL } from "../utils/api";
@@ -28,7 +29,7 @@ export default function Reports() {
     }
   };
 
-  useEffect(() => { if (!reports) fetchReports(); }, []);
+  useDeferredEffect(() => { if (!reports) fetchReports(); }, []);
 
   return (
     <div>

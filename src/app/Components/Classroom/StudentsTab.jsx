@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import StudentCard from "./StudentCard";
@@ -38,7 +39,7 @@ export default function StudentsTab({ classID }) {
     }
   };
 
-  useEffect(() => { if (classID) fetchStudents(); }, [classID]);
+  useDeferredEffect(() => { if (classID) fetchStudents(); }, [classID]);
 
   return (
     <div style={{ maxWidth: 900 }}>

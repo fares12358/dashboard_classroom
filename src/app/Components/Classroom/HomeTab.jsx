@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import {
   FaUsers, FaCalendarAlt, FaTrash, FaEdit, FaCheckCircle,
-  FaClock, FaSync, FaTimes, FaSpinner, FaExclamationTriangle,
+  FaClock, FaSync, FaTimes, FaSpinner, FaExclamationTriangle, FaKey, FaCopy,
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import axios from "axios";
@@ -50,7 +51,7 @@ export default function HomeTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchClass(); }, [classID]);
+  useDeferredEffect(() => { fetchClass(); }, [classID]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -65,6 +66,31 @@ export default function HomeTab({ classID }) {
       await fetchClass(true);
     } catch {
       toast.error("فشل تعديل الكلاس");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ── Join code: students need it to join this class ── */
+  const copyJoinCode = async () => {
+    try {
+      await navigator.clipboard.writeText(classData?.joinCode || "");
+      toast.success("تم نسخ كود الانضمام");
+    } catch {
+      toast.error("تعذر النسخ");
+    }
+  };
+
+  const regenerateJoinCode = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API_URL}/admin/classe/${classID}/join-code`, {}, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      toast.success("تم إنشاء كود انضمام جديد");
+      await fetchClass(true);
+    } catch {
+      toast.error("فشل إنشاء الكود");
     } finally {
       setLoading(false);
     }
@@ -177,6 +203,22 @@ export default function HomeTab({ classID }) {
                     {classData?.createdAt ? new Date(classData.createdAt).toLocaleDateString("ar-EG") : "—"}
                   </strong>
                 </div>
+              </div>
+
+              <div style={{ background: "var(--bg-panel)", borderRadius: 10, padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                <FaKey style={{ color: "var(--blue)" }} />
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <div style={{ fontSize: "0.8rem", color: "var(--blue)", fontWeight: 600, marginBottom: 3 }}>كود الانضمام</div>
+                  <code style={{ fontSize: "1rem", letterSpacing: 2, color: "var(--text-main)" }}>
+                    {classData?.joinCode || "— لا يوجد كود، أنشئ واحدًا —"}
+                  </code>
+                </div>
+                {classData?.joinCode && (
+                  <button className="btn btn-ghost btn-sm" onClick={copyJoinCode} title="نسخ"><FaCopy /></button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={regenerateJoinCode} disabled={loading}>
+                  <FaSync style={{ fontSize: "0.75rem" }} /> {classData?.joinCode ? "تجديد" : "إنشاء"}
+                </button>
               </div>
 
               {classData?.description && (

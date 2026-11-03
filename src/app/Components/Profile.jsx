@@ -10,6 +10,23 @@ import { API_URL } from "../utils/api";
 import { useAppContext } from "../Context/AppContext";
 import { motion, AnimatePresence } from "framer-motion";
 
+function Field({ icon: Icon, label, name, value, editValue, onChange, editing, type = "text", children }) {
+  return (
+    <div style={{ marginBottom: "1.1rem" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: 6 }}>
+        <Icon style={{ color: "var(--blue)", fontSize: "0.8rem" }} /> {label}
+      </label>
+      {editing && name ? (
+        children || (
+          <input className="input" type={type} value={editValue ?? ""} onChange={e => onChange(e.target.value)} />
+        )
+      ) : (
+        <div style={{ fontSize: "0.95rem", color: "var(--text-main)", padding: "0.4rem 0" }}>{value || "—"}</div>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, setUser } = useAppContext();
   const [saving, setSaving] = useState(false);
@@ -71,20 +88,6 @@ export default function Profile() {
     <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "4rem" }}>لا توجد بيانات</div>
   );
 
-  const Field = ({ icon: Icon, label, name, value, editValue, onChange, type = "text", children }) => (
-    <div style={{ marginBottom: "1.1rem" }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: 6 }}>
-        <Icon style={{ color: "var(--blue)", fontSize: "0.8rem" }} /> {label}
-      </label>
-      {editing && name ? (
-        children || (
-          <input className="input" type={type} value={editValue ?? ""} onChange={e => onChange(e.target.value)} />
-        )
-      ) : (
-        <div style={{ fontSize: "0.95rem", color: "var(--text-main)", padding: "0.4rem 0" }}>{value || "—"}</div>
-      )}
-    </div>
-  );
 
   return (
     <motion.div
@@ -123,17 +126,17 @@ export default function Profile() {
           </div>
         </div>
 
-        <Field icon={FaUser} label="الاسم" name="name"
+        <Field editing={editing} icon={FaUser} label="الاسم" name="name"
           value={user.name} editValue={draft?.name}
           onChange={v => setDraft({ ...draft, name: v })} />
 
-        <Field icon={FaEnvelope} label="البريد الإلكتروني" value={user.email} />
+        <Field editing={editing} icon={FaEnvelope} label="البريد الإلكتروني" value={user.email} />
 
-        <Field icon={FaPhone} label="الهاتف" name="phone"
+        <Field editing={editing} icon={FaPhone} label="الهاتف" name="phone"
           value={user.phone || "—"} editValue={draft?.phone}
           onChange={v => setDraft({ ...draft, phone: v })} />
 
-        <Field icon={FaIdBadge} label="الدور" name="role"
+        <Field editing={editing} icon={FaIdBadge} label="الدور" name="role"
           value={user.role === "super-admin" ? "سوبر مدير" : "مدير"}
           editValue={draft?.role} onChange={() => {}}>
           {editing && (
@@ -144,7 +147,7 @@ export default function Profile() {
           )}
         </Field>
 
-        <Field icon={FaCircle} label="الحالة" name="status"
+        <Field editing={editing} icon={FaCircle} label="الحالة" name="status"
           value={user.status === "active" ? "نشط" : "غير نشط"}
           editValue={draft?.status} onChange={() => {}}>
           {editing && (
@@ -164,7 +167,7 @@ export default function Profile() {
               transition={{ duration: 0.25 }}
             >
               <hr className="divider" />
-              <Field icon={FaLock} label="كلمة المرور الجديدة (اختياري)" name="pass"
+              <Field editing={editing} icon={FaLock} label="كلمة المرور الجديدة (اختياري)" name="pass"
                 value="" editValue={passwords.newPassword}
                 onChange={v => setPasswords({ newPassword: v })} type="password" />
             </motion.div>

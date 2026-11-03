@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import {
   FaUser, FaDollarSign, FaCalendarAlt, FaLink, FaSpinner, FaSync,
   FaCheckCircle, FaHourglass,
@@ -37,7 +38,7 @@ export default function Transactions() {
     }
   };
 
-  useEffect(() => { if (!transactions) fetchTransactions(); }, []);
+  useDeferredEffect(() => { if (!transactions) fetchTransactions(); }, []);
 
   return (
     <div>

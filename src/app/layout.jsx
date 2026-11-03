@@ -3,6 +3,7 @@ import "./globals.css";
 import { AppProvider } from "./Context/AppContext";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
+import AuthInterceptor from "./Components/AuthInterceptor";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -23,6 +24,7 @@ export default function RootLayout({ children }) {
         style={{ fontFamily: "var(--font-cairo, Cairo, sans-serif)" }}
       >
         <AppProvider>
+          <AuthInterceptor />
           {/* Global toast notifications */}
           <Toaster
             position="top-center"

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -40,7 +41,7 @@ export default function ReceivedTaskTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchTasks(); }, [classID]);
+  useDeferredEffect(() => { fetchTasks(); }, [classID]);
 
   return (
     <div style={{ maxWidth: 900 }}>

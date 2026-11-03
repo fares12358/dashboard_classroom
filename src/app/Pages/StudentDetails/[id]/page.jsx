@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   FaIdBadge, FaUser, FaEnvelope, FaPhone, FaCalendarAlt,
@@ -8,21 +8,34 @@ import {
 } from "react-icons/fa";
 import { useAppContext } from "@/app/Context/AppContext";
 
+function InfoRow({ icon: Icon, label, value, valueClass = "" }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0.5rem 0" }}>
+      <Icon style={{ color: "var(--blue)", fontSize: "0.85rem", flexShrink: 0 }} />
+      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", minWidth: 110 }}>{label}:</span>
+      <span style={{ fontWeight: 600, fontSize: "0.85rem" }} className={valueClass}>{value}</span>
+    </div>
+  );
+}
+
 export default function StudentDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const { students, isLogin, user } = useAppContext();
-  const [student, setStudent] = useState(null);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
     if (!token || !user || !isLogin) { router.push("/Pages/Auth/login"); return; }
   }, []);
 
+  // Derived from context; no state/effect needed
+  const student = useMemo(
+    () => (students && id ? students.find(s => String(s.id) === String(id)) || null : null),
+    [students, id]
+  );
+
   useEffect(() => {
-    if (!students || !id) { router.back(); return; }
-    const found = students.find(s => String(s.id) === String(id));
-    setStudent(found || null);
+    if (!students || !id) router.back();
   }, [students, id]);
 
   if (!student) return (
@@ -31,13 +44,6 @@ export default function StudentDetailsPage() {
     </div>
   );
 
-  const InfoRow = ({ icon: Icon, label, value, valueClass = "" }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0.5rem 0" }}>
-      <Icon style={{ color: "var(--blue)", fontSize: "0.85rem", flexShrink: 0 }} />
-      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", minWidth: 110 }}>{label}:</span>
-      <span style={{ fontWeight: 600, fontSize: "0.85rem" }} className={valueClass}>{value}</span>
-    </div>
-  );
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-root)", color: "var(--text-main)", padding: "1.75rem 1.25rem" }} dir="rtl">

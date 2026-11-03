@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDeferredEffect } from "@/app/utils/useDeferredEffect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -45,7 +46,7 @@ export default function TaskTab({ classID }) {
     }
   };
 
-  useEffect(() => { fetchTasks(); }, [classID]);
+  useDeferredEffect(() => { fetchTasks(); }, [classID]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
